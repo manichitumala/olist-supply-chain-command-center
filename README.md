@@ -23,6 +23,7 @@ A medallion-architecture analytics pipeline built on the [Olist Brazilian E-Comm
 - [Running it](#running-it)
 - [Phase 1 — Data quality](#phase-1--data-quality)
 - [Key findings](#key-findings)
+- [Order size statistics](#order-size-statistics-items-per-order)
 - [Dashboard](#dashboard)
 - [Known limitations](#known-limitations)
 - [License](#license)
@@ -138,6 +139,16 @@ Full report: [`reports/data_quality_report.md`](reports/data_quality_report.md).
 **Supply Chain Risk Index** (40% demand + 35% delivery + 25% revenue-weighted seller risk): 44 categories Low Risk, 24 Medium Risk, 0 High Risk — risk here is *relative* across categories, not absolute, so no single category is simultaneously worst on all three dimensions at once. `furniture_mattress_and_upholstery` tops the list (56.7), driven by a very high delivery-risk component (85.1).
 
 **Root cause / multi-seller hypothesis — rejected, with a twist.** Orders spanning 2+ sellers are *not* more delay-prone — they're actually late less often (0.7% vs. 8.2% for single-seller orders) and arrive faster, most likely a selection effect since multi-seller orders skew toward higher-volume, more reliable sellers and are rare (<1.5% of orders). But **customer satisfaction runs the opposite direction**: average review score drops sharply as seller count rises (4.17 → 2.89 → 2.24). Multi-seller orders are operationally faster and more reliable by the clock, yet customers rate them worse — Olist's schema has no per-shipment timestamp to confirm it, but split/partial deliveries are the leading theory. Flagged as an open question in [`reports/root_cause_analysis.md`](reports/root_cause_analysis.md) rather than forced to a tidy conclusion.
+
+## Order size statistics (items per order)
+
+This dataset's analogue of a "units per carton" metric: an order is the bundling/shipping unit, and how many product items get packed into it matters for pick-pack and packaging planning the same way units-per-carton does in retail logistics. Full descriptive statistics — mean, revenue-weighted average, p25/median/p75, harmonic mean, std dev, min, max — computed overall and broken down by distance band, region, and seller complexity: [`reports/order_size_stats.md`](reports/order_size_stats.md).
+
+|  | n_orders | mean | weighted avg (by revenue) | p25 | median | p75 | harmonic mean | std dev | min | max |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| **All orders** | 98,199 | 1.14 | 1.27 | 1 | 1 | 1 | 1.06 | 0.54 | 1 | 21 |
+
+The median order is a single item — most Olist orders are one-item transactions — but the revenue-weighted average (1.27) sitting above the plain mean (1.14) shows higher-value orders skew toward slightly larger baskets. The real signal is in the seller-complexity breakdown: orders touching 2 sellers average 2.36 items, and 3+ sellers average 3.85 — mechanically expected (more sellers implies more items) but it confirms multi-seller orders are a distinct, larger-basket population, not random noise.
 
 ## Dashboard
 

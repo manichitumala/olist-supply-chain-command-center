@@ -18,6 +18,7 @@ import build_gold
 import seller_scorecard
 import demand_variability
 import logistics_analysis
+import order_size_stats
 import risk_index
 import root_cause_analysis
 import export_dashboard_data
@@ -30,6 +31,7 @@ STAGES = [
     ("Seller performance scorecard", seller_scorecard.main),
     ("Demand variability analysis", demand_variability.main),
     ("Logistics / geospatial analysis", logistics_analysis.main),
+    ("Order size statistics (items per order)", order_size_stats.main),
     ("Supply chain risk index", risk_index.main),
     ("Root cause analysis", root_cause_analysis.main),
     ("Dashboard data export", export_dashboard_data.main),

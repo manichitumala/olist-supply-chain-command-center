@@ -1,0 +1,2 @@
+,n_orders,mean,weighted_avg_by_revenue,p25,median,p75,harmonic_mean,std_dev,min,max
+ALL ORDERS,98199,1.1416,1.2668,1.0,1.0,1.0,1.0579,0.5376,1,21
