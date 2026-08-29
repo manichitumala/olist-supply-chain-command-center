@@ -4,61 +4,90 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Olist Supply Chain Command Center</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"></script>
 <style>
   :root {
-    color-scheme: light;
-    --page: #f7f7f5; --surface: #ffffff; --text: #16161a; --text-muted: #6b6b70;
-    --border: rgba(0,0,0,0.10); --accent: #2a78d6;
-    --good: #1baf7a; --warn: #eda100; --bad: #e34948;
-    --series-1:#2a78d6; --series-2:#eb6834; --series-3:#1baf7a; --series-4:#eda100;
-    --series-5:#e87ba4; --series-6:#4a3aa7; --series-7:#008300; --series-8:#e34948;
+    --page: #eef1f0; --surface: #ffffff; --surface-2: #f5f7f6;
+    --text: #12181a; --text-muted: #5c6a6e; --border: rgba(18,24,26,0.12);
+    --accent: #0f6e8c; --accent-soft: rgba(15,110,140,0.12);
+    --good: #1f8a5f; --warn: #b8791a; --bad: #b6392f;
+    --series-1:#0f6e8c; --series-2:#c1622c; --series-3:#1f8a5f; --series-4:#b8791a;
+    --series-5:#a15a86; --series-6:#4a5a8f; --series-7:#3c7a4e; --series-8:#b6392f;
+    --font-display: 'IBM Plex Sans', -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+    --font-body: 'IBM Plex Sans', -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+    --font-mono: 'IBM Plex Mono', SFMono-Regular, Consolas, 'Courier New', monospace;
   }
   @media (prefers-color-scheme: dark) {
-    :root { color-scheme: dark;
-      --page:#0d0d0d; --surface:#1a1a19; --text:#f5f5f5; --text-muted:#a3a29d;
-      --border: rgba(255,255,255,0.12); --accent:#3987e5;
+    :root:not([data-theme="light"]) {
+      --page:#0e1416; --surface:#161f22; --surface-2:#1c2629;
+      --text:#eef3f2; --text-muted:#93a3a6; --border: rgba(255,255,255,0.10);
+      --accent:#3fb8d6; --accent-soft: rgba(63,184,214,0.16);
+      --good:#35b788; --warn:#d99a3d; --bad:#e05a4d;
+      --series-1:#3fb8d6; --series-2:#e08a4f; --series-3:#35b788; --series-4:#d99a3d;
+      --series-5:#c97fae; --series-6:#7d8fd6; --series-7:#5fae74; --series-8:#e05a4d;
     }
+  }
+  :root[data-theme="dark"] {
+    --page:#0e1416; --surface:#161f22; --surface-2:#1c2629;
+    --text:#eef3f2; --text-muted:#93a3a6; --border: rgba(255,255,255,0.10);
+    --accent:#3fb8d6; --accent-soft: rgba(63,184,214,0.16);
+    --good:#35b788; --warn:#d99a3d; --bad:#e05a4d;
+    --series-1:#3fb8d6; --series-2:#e08a4f; --series-3:#35b788; --series-4:#d99a3d;
+    --series-5:#c97fae; --series-6:#7d8fd6; --series-7:#5fae74; --series-8:#e05a4d;
   }
   * { box-sizing: border-box; }
   html, body { margin:0; padding:0; background:var(--page); color:var(--text);
-    font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-  header { padding: 22px 28px 8px; }
-  h1 { font-size: 20px; margin: 0 0 4px; }
-  .subtitle { color: var(--text-muted); font-size: 13px; margin-bottom: 14px; }
-  nav { display:flex; gap:6px; padding: 0 24px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
-  nav button { background:none; border:none; padding: 10px 14px; font-size: 13px; color: var(--text-muted);
-    cursor:pointer; border-bottom: 2px solid transparent; }
+    font-family: var(--font-body); }
+  header { padding: 24px 28px 10px; }
+  .eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--accent); display:flex; align-items:center; gap:7px; margin-bottom: 8px; }
+  .eyebrow .dot { width:6px; height:6px; border-radius:50%; background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  h1 { font-family: var(--font-display); font-weight: 700; font-size: 21px; margin: 0 0 5px; text-wrap: balance;
+    letter-spacing: -.01em; }
+  .subtitle { color: var(--text-muted); font-size: 13px; margin-bottom: 14px; max-width: 62ch; line-height:1.5; }
+  nav { display:flex; gap:2px; padding: 0 24px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  nav button { background:none; border:none; padding: 11px 14px; font-family: var(--font-mono); font-size: 11.5px;
+    letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted);
+    cursor:pointer; border-bottom: 2px solid transparent; transition: color .15s ease, border-color .15s ease; }
+  nav button:hover { color: var(--text); }
   nav button.active { color: var(--accent); border-bottom-color: var(--accent); font-weight:600; }
+  nav button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
   main { padding: 20px 24px 60px; max-width: 1280px; margin: 0 auto; }
   .tab { display:none; }
   .tab.active { display:block; }
   .kpi-row { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 12px; margin-bottom: 20px; }
-  .kpi { background: var(--surface); border:1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
-  .kpi .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .03em; }
-  .kpi .value { font-size: 22px; font-weight: 700; margin-top: 4px; }
+  .kpi { background: var(--surface); border:1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+  .kpi .label { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-muted); text-transform: uppercase;
+    letter-spacing: .07em; }
+  .kpi .value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 22px; font-weight: 600;
+    margin-top: 5px; }
   .grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
-  .card { background: var(--surface); border:1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
-  .card h3 { margin: 0 0 10px; font-size: 14px; }
-  .card .note { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
-  table { width:100%; border-collapse: collapse; font-size: 12px; }
+  .card { background: var(--surface); border:1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+  .card h3 { font-family: var(--font-display); font-weight: 600; margin: 0 0 10px; font-size: 13.5px; }
+  .card .note { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height:1.5; }
+  table { width:100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
   th, td { text-align:left; padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
-  th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; }
+  td { font-family: var(--font-mono); }
+  th { font-family: var(--font-body); color: var(--text-muted); font-weight: 600; font-size: 10.5px;
+    text-transform: uppercase; letter-spacing: .04em; }
   .table-wrap { overflow-x: auto; }
   canvas { max-width: 100%; }
   .tier-Excellent, .tag-good { color: var(--good); }
   .tier-Good { color: var(--series-3); }
   .tier-At-Risk, .tag-warn { color: var(--warn); }
   .tier-Critical, .tag-bad { color: var(--bad); }
-  .badge { display:inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight:600; }
-  .badge.on-time, .badge.LOW { background: rgba(27,175,122,0.15); color: var(--good); }
-  .badge.late, .badge.MEDIUM { background: rgba(237,161,0,0.15); color: var(--warn); }
-  .badge.HIGH { background: rgba(227,73,72,0.15); color: var(--bad); }
+  .badge { display:inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight:600;
+    font-family: var(--font-mono); }
+  .badge.on-time, .badge.LOW { background: rgba(31,138,95,0.15); color: var(--good); }
+  .badge.late, .badge.MEDIUM { background: rgba(184,121,26,0.15); color: var(--warn); }
+  .badge.HIGH { background: rgba(182,57,47,0.15); color: var(--bad); }
 </style>
 </head>
 <body>
 <header>
+  <div class="eyebrow"><span class="dot"></span>Live data &middot; Olist 2016&ndash;2018</div>
   <h1>Olist Supply Chain Command Center</h1>
   <div class="subtitle">Delivery performance, seller intelligence &amp; operational risk analytics — built on the medallion (bronze/silver/gold) pipeline in this repo</div>
 </header>
@@ -165,12 +194,13 @@
 const D = DASHBOARD_DATA;
 const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
 const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
-const textColor = isDark ? '#a3a29d' : '#6b6b70';
+const textColor = isDark ? '#93a3a6' : '#5c6a6e';
 Chart.defaults.color = textColor;
 Chart.defaults.borderColor = gridColor;
 Chart.defaults.font.size = 11;
+Chart.defaults.font.family = "'IBM Plex Mono', monospace";
 
-const PALETTE = ['#2a78d6','#eb6834','#1baf7a','#eda100','#e87ba4','#4a3aa7','#008300','#e34948'];
+const PALETTE = ['#3fb8d6','#e08a4f','#35b788','#d99a3d','#c97fae','#7d8fd6','#5fae74','#e05a4d'];
 
 function fmtMoney(v){ return 'R$ ' + Number(v).toLocaleString(undefined,{maximumFractionDigits:0}); }
 function fmtNum(v){ return Number(v).toLocaleString(); }
