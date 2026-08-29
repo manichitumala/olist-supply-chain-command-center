@@ -1,0 +1,4 @@
+sellers_per_order_band,n_orders,avg_lead_time_days,late_rate_pct,avg_review_score
+1,95203,12.66,8.2,4.17
+2,1216,9.33,1.48,2.89
+3+,59,8.53,0.0,2.24

@@ -1,0 +1,16 @@
+distance_band,region,n_orders,late_rate_pct,avg_transit_days
+1000+ km,Northeast,8434,14.8,17.08
+0-100 km,Northeast,82,10.98,4.9
+300-500 km,Northeast,61,9.84,10.67
+1000+ km,North,1769,9.67,19.32
+1000+ km,South,1633,8.94,13.78
+500-1000 km,Central-West,3796,8.77,11.59
+500-1000 km,Southeast,14800,8.68,10.46
+300-500 km,Central-West,226,8.41,12.17
+300-500 km,Southeast,19647,7.94,9.21
+1000+ km,Southeast,2130,7.93,10.89
+500-1000 km,South,6969,7.72,12.07
+500-1000 km,Northeast,417,7.19,12.59
+100-300 km,Southeast,12447,6.51,6.78
+0-100 km,Southeast,17176,6.46,3.36
+1000+ km,Central-West,1449,6.14,13.39

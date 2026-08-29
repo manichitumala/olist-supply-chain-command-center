@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Olist Supply Chain Command Center</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f7f7f5; --surface: #ffffff; --text: #16161a; --text-muted: #6b6b70;
+    --border: rgba(0,0,0,0.10); --accent: #2a78d6;
+    --good: #1baf7a; --warn: #eda100; --bad: #e34948;
+    --series-1:#2a78d6; --series-2:#eb6834; --series-3:#1baf7a; --series-4:#eda100;
+    --series-5:#e87ba4; --series-6:#4a3aa7; --series-7:#008300; --series-8:#e34948;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { color-scheme: dark;
+      --page:#0d0d0d; --surface:#1a1a19; --text:#f5f5f5; --text-muted:#a3a29d;
+      --border: rgba(255,255,255,0.12); --accent:#3987e5;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; background:var(--page); color:var(--text);
+    font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+  header { padding: 22px 28px 8px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .subtitle { color: var(--text-muted); font-size: 13px; margin-bottom: 14px; }
+  nav { display:flex; gap:6px; padding: 0 24px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  nav button { background:none; border:none; padding: 10px 14px; font-size: 13px; color: var(--text-muted);
+    cursor:pointer; border-bottom: 2px solid transparent; }
+  nav button.active { color: var(--accent); border-bottom-color: var(--accent); font-weight:600; }
+  main { padding: 20px 24px 60px; max-width: 1280px; margin: 0 auto; }
+  .tab { display:none; }
+  .tab.active { display:block; }
+  .kpi-row { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 12px; margin-bottom: 20px; }
+  .kpi { background: var(--surface); border:1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .kpi .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .03em; }
+  .kpi .value { font-size: 22px; font-weight: 700; margin-top: 4px; }
+  .grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+  .card { background: var(--surface); border:1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .card h3 { margin: 0 0 10px; font-size: 14px; }
+  .card .note { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+  table { width:100%; border-collapse: collapse; font-size: 12px; }
+  th, td { text-align:left; padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; }
+  .table-wrap { overflow-x: auto; }
+  canvas { max-width: 100%; }
+  .tier-Excellent, .tag-good { color: var(--good); }
+  .tier-Good { color: var(--series-3); }
+  .tier-At-Risk, .tag-warn { color: var(--warn); }
+  .tier-Critical, .tag-bad { color: var(--bad); }
+  .badge { display:inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight:600; }
+  .badge.on-time, .badge.LOW { background: rgba(27,175,122,0.15); color: var(--good); }
+  .badge.late, .badge.MEDIUM { background: rgba(237,161,0,0.15); color: var(--warn); }
+  .badge.HIGH { background: rgba(227,73,72,0.15); color: var(--bad); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Olist Supply Chain Command Center</h1>
+  <div class="subtitle">Delivery performance, seller intelligence &amp; operational risk analytics — built on the medallion (bronze/silver/gold) pipeline in this repo</div>
+</header>
+<nav id="tabs">
+  <button data-tab="executive" class="active">Executive</button>
+  <button data-tab="fulfilment">Order Fulfilment</button>
+  <button data-tab="logistics">Logistics Intelligence</button>
+  <button data-tab="sellers">Seller Performance</button>
+  <button data-tab="risk">Demand &amp; Risk</button>
+</nav>
+<main>
+
+  <section id="executive" class="tab active">
+    <div class="kpi-row" id="exec-kpis"></div>
+    <div class="card">
+      <h3>Monthly trend — revenue &amp; on-time delivery rate</h3>
+      <canvas id="execTrendChart" height="90"></canvas>
+    </div>
+  </section>
+
+  <section id="fulfilment" class="tab">
+    <div class="grid-2">
+      <div class="card">
+        <h3>Lead-time decomposition (avg days, delivered orders)</h3>
+        <canvas id="stageChart" height="180"></canvas>
+        <div class="note">Purchase → Payment → Seller Fulfilment → Transit → Delivered</div>
+      </div>
+      <div class="card">
+        <h3>Stage time: On Time vs Late orders</h3>
+        <canvas id="stageByOtdChart" height="180"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Monthly stage trend</h3>
+      <canvas id="stageTrendChart" height="90"></canvas>
+    </div>
+  </section>
+
+  <section id="logistics" class="tab">
+    <div class="grid-2">
+      <div class="card">
+        <h3>Late rate &amp; lead time by distance band</h3>
+        <canvas id="distanceBandChart" height="180"></canvas>
+      </div>
+      <div class="card">
+        <h3>Distance vs delivery time (size = freight, colour = status)</h3>
+        <canvas id="scatterChart" height="180"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <h3>State-level performance (customer state, &ge;30 orders)</h3>
+      <div class="table-wrap" id="stateTable"></div>
+    </div>
+  </section>
+
+  <section id="sellers" class="tab">
+    <div class="grid-2">
+      <div class="card">
+        <h3>Seller performance tier distribution</h3>
+        <canvas id="tierChart" height="180"></canvas>
+        <div class="note">Score = 30% OTD + 25% Fulfilment Speed + 20% Cancellation Rate + 15% Review Score + 10% Freight Efficiency</div>
+      </div>
+      <div class="card">
+        <h3>Bottom 10 sellers (highest operational risk)</h3>
+        <div class="table-wrap" id="bottomSellerTable"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Top 10 sellers</h3>
+      <div class="table-wrap" id="topSellerTable"></div>
+    </div>
+  </section>
+
+  <section id="risk" class="tab">
+    <div class="grid-2">
+      <div class="card">
+        <h3>Demand variability class (by category)</h3>
+        <canvas id="demandClassChart" height="180"></canvas>
+      </div>
+      <div class="card">
+        <h3>Supply chain risk tier (by category)</h3>
+        <canvas id="riskTierChart" height="180"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Highest-risk categories — investigate first</h3>
+      <div class="table-wrap" id="riskTable"></div>
+    </div>
+    <div class="card">
+      <h3>Root cause: worst-performing sellers by late rate</h3>
+      <div class="table-wrap" id="rootCauseSellerTable"></div>
+    </div>
+    <div class="card">
+      <h3>Root cause: order complexity (sellers per order)</h3>
+      <div class="table-wrap" id="complexityTable"></div>
+      <div class="note">See reports/root_cause_analysis.md for the full multi-seller hypothesis write-up.</div>
+    </div>
+  </section>
+
+</main>
+
+<script src="data.js"></script>
+<script>
+const D = DASHBOARD_DATA;
+const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
+const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+const textColor = isDark ? '#a3a29d' : '#6b6b70';
+Chart.defaults.color = textColor;
+Chart.defaults.borderColor = gridColor;
+Chart.defaults.font.size = 11;
+
+const PALETTE = ['#2a78d6','#eb6834','#1baf7a','#eda100','#e87ba4','#4a3aa7','#008300','#e34948'];
+
+function fmtMoney(v){ return 'R$ ' + Number(v).toLocaleString(undefined,{maximumFractionDigits:0}); }
+function fmtNum(v){ return Number(v).toLocaleString(); }
+
+// ---------- Tabs ----------
+document.getElementById('tabs').addEventListener('click', e => {
+  if (e.target.tagName !== 'BUTTON') return;
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  e.target.classList.add('active');
+  document.getElementById(e.target.dataset.tab).classList.add('active');
+});
+
+// ---------- Executive ----------
+(function(){
+  const k = D.executive.headline;
+  const kpis = [
+    ['Total Orders', fmtNum(k.total_orders)],
+    ['Revenue', fmtMoney(k.total_revenue)],
+    ['On-Time Delivery', k.on_time_delivery_pct + '%'],
+    ['Avg Delivery Time', k.avg_delivery_days + ' days'],
+    ['Late Orders', fmtNum(k.late_orders)],
+    ['Cancellation Rate', k.cancellation_rate_pct + '%'],
+    ['Avg Review Score', k.avg_review_score + ' / 5'],
+  ];
+  document.getElementById('exec-kpis').innerHTML = kpis.map(([l,v]) =>
+    `<div class="kpi"><div class="label">${l}</div><div class="value">${v}</div></div>`).join('');
+
+  const m = D.executive.monthly_trend;
+  new Chart(document.getElementById('execTrendChart'), {
+    data: {
+      labels: m.map(r => r.year_month),
+      datasets: [
+        { type:'bar', label:'Revenue (R$)', data:m.map(r=>r.revenue), backgroundColor: PALETTE[0]+'55', yAxisID:'y' },
+        { type:'line', label:'On-Time %', data:m.map(r=>r.on_time_delivery_pct), borderColor: PALETTE[2], yAxisID:'y1', tension:.3 },
+      ]
+    },
+    options: { responsive:true, interaction:{mode:'index',intersect:false},
+      scales: { y:{ position:'left', grid:{color:gridColor} }, y1:{ position:'right', min:0, max:100, grid:{drawOnChartArea:false} } } }
+  });
+})();
+
+// ---------- Fulfilment ----------
+(function(){
+  const s = D.fulfilment.stage_avg;
+  new Chart(document.getElementById('stageChart'), {
+    type:'bar',
+    data: { labels:['Payment','Seller Fulfilment','Transit'],
+      datasets:[{ label:'Avg days', data:[s.avg_payment_days, s.avg_fulfilment_days, s.avg_transit_days],
+        backgroundColor:[PALETTE[0],PALETTE[3],PALETTE[7]] }] },
+    options: { indexAxis:'y', plugins:{legend:{display:false}} }
+  });
+
+  const byOtd = D.fulfilment.stage_by_otd_status;
+  new Chart(document.getElementById('stageByOtdChart'), {
+    type:'bar',
+    data: { labels:['Payment','Seller Fulfilment','Transit'],
+      datasets: byOtd.map((r,i) => ({ label:r.otd_status,
+        data:[r.avg_payment_days, r.avg_fulfilment_days, r.avg_transit_days],
+        backgroundColor: r.otd_status === 'Late' ? PALETTE[7] : PALETTE[2] })) },
+    options: { plugins:{legend:{position:'bottom'}} }
+  });
+
+  const t = D.fulfilment.monthly_stage_trend;
+  new Chart(document.getElementById('stageTrendChart'), {
+    type:'line',
+    data: { labels:t.map(r=>r.year_month),
+      datasets:[
+        {label:'Payment', data:t.map(r=>r.avg_payment_days), borderColor:PALETTE[0], tension:.3},
+        {label:'Fulfilment', data:t.map(r=>r.avg_fulfilment_days), borderColor:PALETTE[3], tension:.3},
+        {label:'Transit', data:t.map(r=>r.avg_transit_days), borderColor:PALETTE[7], tension:.3},
+      ]},
+    options: { plugins:{legend:{position:'bottom'}} }
+  });
+})();
+
+// ---------- Logistics ----------
+(function(){
+  const b = D.logistics.distance_band_summary;
+  new Chart(document.getElementById('distanceBandChart'), {
+    data: { labels: b.map(r=>r.distance_band),
+      datasets: [
+        {type:'bar', label:'Late %', data:b.map(r=>r.late_pct), backgroundColor:PALETTE[7]+'aa', yAxisID:'y'},
+        {type:'line', label:'Avg lead time (days)', data:b.map(r=>r.avg_lead_time_days), borderColor:PALETTE[0], yAxisID:'y1', tension:.3},
+      ]},
+    options: { scales:{ y:{position:'left', title:{display:true,text:'Late %'}}, y1:{position:'right', grid:{drawOnChartArea:false}, title:{display:true,text:'Days'}} } }
+  });
+
+  const sc = D.logistics.scatter_sample;
+  const onTime = sc.filter(r=>r.otd_status==='On Time');
+  const late = sc.filter(r=>r.otd_status==='Late');
+  const toPoints = arr => arr.map(r => ({ x:r.distance_km, y:r.lead_time_days, r: Math.min(14, 3 + r.freight_value/15) }));
+  new Chart(document.getElementById('scatterChart'), {
+    type:'bubble',
+    data: { datasets:[
+      { label:'On Time', data: toPoints(onTime), backgroundColor: PALETTE[2]+'40' },
+      { label:'Late', data: toPoints(late), backgroundColor: PALETTE[7]+'55' },
+    ]},
+    options: { scales:{ x:{title:{display:true,text:'Distance (km)'}}, y:{title:{display:true,text:'Lead time (days)'}} } }
+  });
+
+  const st = D.logistics.state_performance;
+  document.getElementById('stateTable').innerHTML = `<table><thead><tr>
+    <th>State</th><th>Orders</th><th>Avg Lead (days)</th><th>Late %</th><th>Avg Review</th>
+    </tr></thead><tbody>${st.map(r=>`<tr><td>${r.state}</td><td>${fmtNum(r.n_orders)}</td>
+    <td>${r.avg_lead_time_days}</td><td>${r.late_pct}%</td><td>${r.avg_review_score}</td></tr>`).join('')}</tbody></table>`;
+})();
+
+// ---------- Sellers ----------
+(function(){
+  const tc = D.sellers.tier_counts;
+  const order = ['Excellent','Good','At Risk','Critical'];
+  new Chart(document.getElementById('tierChart'), {
+    type:'doughnut',
+    data: { labels: order, datasets:[{ data: order.map(k=>tc[k]||0),
+      backgroundColor:[PALETTE[2],PALETTE[0],PALETTE[3],PALETTE[7]] }] },
+    options: { plugins:{legend:{position:'bottom'}} }
+  });
+
+  const cols = ['seller_id','state','n_orders','otd_pct','avg_fulfilment_days','cancellation_rate_pct','avg_review_score','seller_score','performance_tier'];
+  const headers = ['Seller','State','Orders','OTD %','Fulfil (d)','Cancel %','Review','Score','Tier'];
+  function renderSellerTable(el, rows){
+    document.getElementById(el).innerHTML = `<table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+      <tbody>${rows.map(r=>`<tr>${cols.map(c=>{
+        let v = r[c];
+        if (c==='seller_id') v = String(v).slice(0,10)+'…';
+        if (c==='performance_tier') return `<td><span class="tier-${v.replace(' ','-')}">${v}</span></td>`;
+        return `<td>${v}</td>`;
+      }).join('')}</tr>`).join('')}</tbody></table>`;
+  }
+  renderSellerTable('topSellerTable', D.sellers.top_10);
+  renderSellerTable('bottomSellerTable', D.sellers.bottom_10);
+})();
+
+// ---------- Demand & Risk ----------
+(function(){
+  const dc = D.demand_risk.demand_class_counts;
+  const classes = Object.keys(dc);
+  new Chart(document.getElementById('demandClassChart'), {
+    type:'pie',
+    data: { labels: classes, datasets:[{ data: classes.map(k=>dc[k]), backgroundColor: PALETTE }] },
+    options: { plugins:{legend:{position:'bottom'}} }
+  });
+
+  const rt = D.demand_risk.risk_tier_counts;
+  const tiers = ['LOW RISK','MEDIUM RISK','HIGH RISK'];
+  new Chart(document.getElementById('riskTierChart'), {
+    type:'bar',
+    data: { labels: tiers, datasets:[{ label:'Categories', data: tiers.map(t=>rt[t]||0),
+      backgroundColor:[PALETTE[2],PALETTE[3],PALETTE[7]] }] },
+    options: { plugins:{legend:{display:false}} }
+  });
+
+  const rc = D.demand_risk.top_risk_categories;
+  document.getElementById('riskTable').innerHTML = `<table><thead><tr>
+    <th>Category</th><th>Orders</th><th>Demand Risk</th><th>Delivery Risk</th><th>Seller Risk</th><th>Total Risk</th><th>Tier</th>
+    </tr></thead><tbody>${rc.map(r=>`<tr><td>${r.category_en}</td><td>${fmtNum(r.n_orders)}</td>
+    <td>${r.demand_risk}</td><td>${r.delivery_risk}</td><td>${r.seller_risk}</td>
+    <td><b>${r.supply_chain_risk}</b></td><td><span class="badge ${r.risk_tier.split(' ')[0]}">${r.risk_tier}</span></td></tr>`).join('')}</tbody></table>`;
+
+  const ws = D.root_cause.worst_sellers;
+  document.getElementById('rootCauseSellerTable').innerHTML = `<table><thead><tr>
+    <th>Seller</th><th>State</th><th>Orders</th><th>Late %</th><th>Avg Fulfilment (d)</th>
+    </tr></thead><tbody>${ws.map(r=>`<tr><td>${String(r.seller_id).slice(0,10)}…</td><td>${r.state}</td>
+    <td>${r.n_orders}</td><td>${r.late_rate_pct}%</td><td>${r.avg_fulfilment_days}</td></tr>`).join('')}</tbody></table>`;
+
+  const mc = D.root_cause.multi_seller_complexity;
+  document.getElementById('complexityTable').innerHTML = `<table><thead><tr>
+    <th>Sellers per Order</th><th>Orders</th><th>Avg Lead Time (d)</th><th>Late %</th><th>Avg Review</th>
+    </tr></thead><tbody>${mc.map(r=>`<tr><td>${r.sellers_per_order_band}</td><td>${fmtNum(r.n_orders)}</td>
+    <td>${r.avg_lead_time_days}</td><td>${r.late_rate_pct}%</td><td>${r.avg_review_score}</td></tr>`).join('')}</tbody></table>`;
+})();
+</script>
+</body>
+</html>

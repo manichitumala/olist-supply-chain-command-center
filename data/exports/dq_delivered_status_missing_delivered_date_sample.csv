@@ -1,0 +1,9 @@
+order_id,order_status,order_purchase_timestamp,order_delivered_customer_date
+2d1e2d5bf4dc7227b3bfebb81328c15f,delivered,2017-11-28 17:44:07,
+f5dd62b788049ad9fc0526e3ad11a097,delivered,2018-06-20 06:58:43,
+2ebdfc4f15f23b91474edf87475f108e,delivered,2018-07-01 17:05:11,
+e69f75a717d64fc5ecdfae42b2e8e086,delivered,2018-07-01 22:05:55,
+0d3268bad9b086af767785e3f0fc0133,delivered,2018-07-01 21:14:02,
+2d858f451373b04fb5c984a1cc2defaf,delivered,2017-05-25 23:22:43,
+ab7c89dc1bf4a1ead9d6ec1ec8968a84,delivered,2018-06-08 12:09:39,
+20edc82cf5400ce95e1afacc25798b31,delivered,2018-06-27 16:09:12,
