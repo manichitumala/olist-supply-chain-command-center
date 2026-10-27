@@ -41,7 +41,9 @@ INSUFFICIENT = "Insufficient volume"
 
 def build_scorecard(raw: pd.DataFrame, reviews: pd.DataFrame,
                     min_orders: int = MIN_SELLER_ORDERS) -> tuple[pd.DataFrame, dict]:
-    df = raw.copy()
+    # Fixed input order: tier assignment breaks score ties by position, and
+    # SQL GROUP BY output order is not guaranteed.
+    df = raw.sort_values("seller_id").reset_index(drop=True)
     df["n_on_time"] = df["n_delivered"] - df["n_late"]
     df["late_rate_raw"] = df["n_late"] / df["n_delivered"].replace(0, np.nan)
     df["missed_limit_rate_raw"] = df["n_missed_shipping_limit"] / df["n_with_handover"].replace(0, np.nan)
@@ -88,7 +90,8 @@ def build_scorecard(raw: pd.DataFrame, reviews: pd.DataFrame,
         "n_sellers": len(df),
         "n_scored": int(df["eligible"].sum()),
     }
-    return df.sort_values(["seller_score", "n_orders"], ascending=[False, False]), params
+    return df.sort_values(["seller_score", "n_orders", "seller_id"],
+                          ascending=[False, False, True]), params
 
 
 OUT_COLS = [
@@ -124,7 +127,8 @@ def write_report(df: pd.DataFrame, params: dict, settings: Settings) -> None:
     tiers = df["performance_tier"].value_counts().reindex(
         [t for t, _ in TIERS] + [INSUFFICIENT]).fillna(0).astype(int)
     scored = df[df["seller_score"].notna()]
-    flagged = scored[scored["late_rate_flag"]].sort_values("late_rate_ci_low", ascending=False)
+    flagged = scored[scored["late_rate_flag"]].sort_values(
+        ["late_rate_ci_low", "seller_id"], ascending=[False, True])
     show = ["seller_id", "state", "n_orders", "late_rate_raw", "late_rate_ci_low",
             "late_rate_ci_high", "late_rate_adj", "avg_fulfilment_days", "avg_review_adj",
             "seller_score", "performance_tier"]

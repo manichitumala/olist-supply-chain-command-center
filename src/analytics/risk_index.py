@@ -27,7 +27,9 @@ TIERS = [("HIGH RISK", 0.20), ("MEDIUM RISK", 0.40), ("LOW RISK", 0.40)]
 
 def build_index(demand: pd.DataFrame, delivery: pd.DataFrame) -> pd.DataFrame:
     demand = demand[demand["demand_class"] != "Insufficient data"]
-    df = demand.merge(delivery, on="category_en", how="inner")
+    # Fixed order so tier ties resolve the same way on every run.
+    df = demand.merge(delivery, on="category_en", how="inner") \
+        .sort_values("category_en").reset_index(drop=True)
 
     df["demand_risk"] = (percentile_score(df["coefficient_of_variation"])
                          + percentile_score(df["anomaly_frequency"])) / 2
@@ -39,7 +41,7 @@ def build_index(demand: pd.DataFrame, delivery: pd.DataFrame) -> pd.DataFrame:
 
     df["supply_chain_risk"] = sum(df[c] * w for c, w in WEIGHTS.items()).round(1)
     df["risk_tier"] = assign_quantile_tiers(df["supply_chain_risk"], TIERS)
-    return df.sort_values("supply_chain_risk", ascending=False)
+    return df.sort_values(["supply_chain_risk", "category_en"], ascending=[False, True])
 
 
 OUT_COLS = [

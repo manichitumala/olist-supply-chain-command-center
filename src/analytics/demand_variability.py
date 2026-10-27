@@ -86,7 +86,7 @@ def summarise(weekly: pd.DataFrame) -> pd.DataFrame:
         enough, [sbc_class(a, c) for a, c in zip(summary["adi"], summary["cv2_nonzero"])],
         "Insufficient data")
     summary["anomaly_frequency"] = (summary["anomaly_weeks"] / summary["n_weeks"]).round(3)
-    return summary.sort_values("coefficient_of_variation", ascending=False)
+    return summary.sort_values(["coefficient_of_variation", "category_en"], ascending=[False, True])
 
 
 def run(con: duckdb.DuckDBPyConnection, settings: Settings) -> pd.DataFrame:
@@ -97,7 +97,7 @@ def run(con: duckdb.DuckDBPyConnection, settings: Settings) -> pd.DataFrame:
     summary = summarise(weekly)
     sufficient = set(summary.loc[summary["demand_class"] != "Insufficient data", "category_en"])
     anomalies = weekly[(weekly["anomaly"] != "Normal") & weekly["category_en"].isin(sufficient)] \
-        .sort_values("z_score", ascending=False)
+        .sort_values(["z_score", "category_en", "week_start"], ascending=[False, True, True])
 
     settings.exports_dir.mkdir(parents=True, exist_ok=True)
     summary.round(3).to_csv(settings.exports_dir / "demand_variability_by_category.csv", index=False)

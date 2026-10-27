@@ -1,6 +1,7 @@
 """Behavioural tests for bronze -> silver -> gold on the synthetic dataset.
 Each test pins one rule, most of them v1 bugs."""
 
+import csv
 import shutil
 
 import pytest
@@ -40,8 +41,8 @@ def test_incremental_ingest_skips_unchanged_and_picks_up_changes(synthetic_setti
     with connect(settings) as con:
         first = load_bronze.ingest(con, settings)
         second = load_bronze.ingest(con, settings)
-        with open(raw / "olist_sellers_dataset.csv", "a", encoding="utf-8") as f:
-            f.write("s3,20000,rio de janeiro,RJ\n")
+        with open(raw / "olist_sellers_dataset.csv", "a", newline="", encoding="utf-8") as f:
+            csv.writer(f).writerow(["s3", "20000", "rio de janeiro", "RJ"])
         third = load_bronze.ingest(con, settings)
 
     assert all(v["status"] == "ingested" for v in first.values())

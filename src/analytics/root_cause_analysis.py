@@ -97,7 +97,7 @@ def run(con: duckdb.DuckDBPyConnection, settings: Settings) -> dict:
 
     scorecard = pd.read_csv(settings.exports_dir / "seller_scorecard.csv")
     worst_sellers = (scorecard[scorecard["late_rate_flag"] == True]  # noqa: E712
-                     .sort_values("late_rate_ci_low", ascending=False).head(15))
+                     .sort_values(["late_rate_ci_low", "seller_id"], ascending=[False, True]).head(15))
     worst_sellers = worst_sellers.assign(
         late_rate_pct=(100 * worst_sellers["late_rate_raw"]).round(2),
         late_ci_low_pct=(100 * worst_sellers["late_rate_ci_low"]).round(2),
@@ -118,7 +118,8 @@ def run(con: duckdb.DuckDBPyConnection, settings: Settings) -> dict:
     lo, hi = wilson_interval(transport["n_late"], transport["n_orders"])
     transport["late_rate_pct"] = (100 * transport["n_late"] / transport["n_orders"]).round(2)
     transport["late_ci_low_pct"], transport["late_ci_high_pct"] = (100 * lo).round(2), (100 * hi).round(2)
-    transport = transport.sort_values("late_rate_pct", ascending=False).head(15)
+    transport = transport.sort_values(["late_rate_pct", "n_orders", "distance_band", "region"],
+                                      ascending=[False, False, True, True]).head(15)
 
     settings.exports_dir.mkdir(parents=True, exist_ok=True)
     worst_sellers.to_csv(settings.exports_dir / "root_cause_worst_sellers.csv", index=False)

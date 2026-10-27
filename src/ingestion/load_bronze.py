@@ -71,7 +71,8 @@ def ingest(con: duckdb.DuckDBPyConnection, settings: Settings, force: bool = Fal
                        '{filename}'      AS _source_file,
                        '{digest}'        AS _source_sha256,
                        TIMESTAMPTZ '{ingested_at}' AS _ingested_at
-                FROM read_csv('{src.as_posix()}', all_varchar = true, header = true)
+                FROM read_csv('{src.as_posix()}', all_varchar = true, header = true,
+                              delim = ',', quote = '"', escape = '"')
             ) TO '{out.as_posix()}' (FORMAT PARQUET, COMPRESSION ZSTD)
         """)
         rows = con.execute(f"SELECT COUNT(*) FROM '{out.as_posix()}'").fetchone()[0]
