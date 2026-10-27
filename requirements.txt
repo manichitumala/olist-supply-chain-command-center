@@ -8,3 +8,7 @@ tabulate>=0.9
 pytest>=8.0
 streamlit>=1.50
 plotly>=6.0
+scikit-learn>=1.6
+xgboost>=2.0
+shap>=0.45
+joblib>=1.3

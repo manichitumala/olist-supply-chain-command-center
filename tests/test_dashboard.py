@@ -19,7 +19,7 @@ def test_app_renders_every_tab_on_real_data(real_warehouse, monkeypatch):
     monkeypatch.setenv("OLIST_DATA_DIR", str(ROOT / "data"))
     at = AppTest.from_file(APP, default_timeout=120).run()
     assert not at.exception
-    assert len(at.tabs) == 6
+    assert len(at.tabs) == 7
     metrics = {m.label: m.value for m in at.metric}
     assert metrics["On-time delivery"].endswith("%")
     assert metrics["Flagged (significantly late)"] == "81"

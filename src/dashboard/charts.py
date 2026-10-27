@@ -185,3 +185,50 @@ def stage_timings(log: dict) -> go.Figure:
     fig.update_yaxes(autorange="reversed", gridcolor="rgba(0,0,0,0)")
     fig.update_xaxes(showgrid=True, gridcolor=GRID, range=[0, float(stages["seconds"].max()) * 1.2])
     return fig
+
+
+# ------------------------------------------------------------------ model outputs
+# Predictions are drawn with an open/dashed style so they never read as
+# observed history.
+
+def calibration_chart(rel: pd.DataFrame, model_name: str) -> go.Figure:
+    top = 100 * float(max(rel["mean_predicted"].max(), rel["observed_rate"].max())) * 1.1
+    fig = go.Figure()
+    fig.add_scatter(x=[0, top], y=[0, top], mode="lines", name="Perfect calibration",
+                    line=dict(color=AXIS, width=1), hoverinfo="skip")
+    fig.add_scatter(x=100 * rel["mean_predicted"], y=100 * rel["observed_rate"], mode="lines+markers",
+                    name=f"{model_name} (predicted)",
+                    line=dict(color=SERIES[0], width=2, dash="dash"),
+                    marker=dict(size=9, color=SURFACE, line=dict(color=SERIES[0], width=2)),
+                    customdata=rel["n"],
+                    hovertemplate="Predicted %{x:.1f}% · observed <b>%{y:.1f}%</b>"
+                                  "<br>%{customdata:,} orders<extra></extra>")
+    fig = _base(fig, "Calibration: predicted vs observed late rate (deciles)", height=360,
+                x_title="Mean predicted probability (%)", y_title="Observed late rate (%)", legend=True)
+    return fig
+
+
+def risk_band_bars(bands: pd.DataFrame) -> go.Figure:
+    order = ["Low", "Medium", "High", "Critical"]
+    b = bands.set_index("risk_band").reindex(order).fillna(0).reset_index()
+    fig = go.Figure(go.Bar(
+        x=b["risk_band"], y=100 * b["observed_late_rate"], marker_color=ORDINAL_BLUE[::-1],
+        text=[f"{100 * r:.1f}%<br>n={int(n):,}" for r, n in zip(b["observed_late_rate"], b["n"])],
+        textposition="outside", textfont=dict(color=INK_2),
+        hovertemplate="<b>%{x}</b> predicted risk<br>Actually late: %{y:.1f}%<extra></extra>"))
+    fig = _base(fig, "Actual late rate by predicted risk band", height=360,
+                x_title="Predicted risk band", y_title="Actually late (%)")
+    fig.update_yaxes(range=[0, float(100 * b["observed_late_rate"].max()) * 1.3 + 1])
+    return fig
+
+
+def importance_bars(imp: pd.DataFrame, model_name: str) -> go.Figure:
+    imp = imp.head(12).iloc[::-1]
+    fig = go.Figure(go.Bar(
+        y=imp["feature"], x=imp["mean_abs_shap"], orientation="h", marker_color=SERIES[0],
+        hovertemplate="%{y}: <b>%{x:.3f}</b> mean |SHAP| (log-odds)<extra></extra>"))
+    fig = _base(fig, f"What the model relies on (SHAP, {model_name})", height=400,
+                x_title="Mean |SHAP value| (log-odds)")
+    fig.update_yaxes(gridcolor="rgba(0,0,0,0)")
+    fig.update_xaxes(showgrid=True, gridcolor=GRID)
+    return fig
