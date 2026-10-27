@@ -19,6 +19,7 @@ from src.config import get_settings
 from src.dashboard import export_static
 from src.db import connect
 from src.ingestion import load_bronze
+from src.models import delay_prediction
 from src.quality import data_quality
 from src.transformation import build_gold, build_silver
 
@@ -40,6 +41,7 @@ def main(argv=None):
         ("order_size_stats", lambda con: order_size_stats.run(con, settings)),
         ("risk_index", lambda con: risk_index.run(con, settings)),
         ("root_cause_analysis", lambda con: root_cause_analysis.run(con, settings)),
+        ("delay_model", lambda con: delay_prediction.run(con, settings)),
         ("dashboard_export", lambda con: export_static.run(con, settings)),
     ]
 

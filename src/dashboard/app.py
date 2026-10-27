@@ -54,7 +54,8 @@ def show(fig):
 st.title("Olist Supply Chain Command Center")
 st.caption(
     "Brazilian e-commerce marketplace, 99,441 orders (2016-2018). "
-    "**All figures are historical observations** - no model predictions are shown yet. "
+    "Tabs show **historical observations**, except *Delivery risk (model)*, which shows clearly "
+    "labelled **model predictions**. "
     "Late = delivered after the promised calendar date.")
 
 f1, f2, _ = st.columns([2, 2, 3])
@@ -73,7 +74,7 @@ if not kpi["orders"]:
 platform_late = 100 * kpi["late"] / kpi["delivered"] if kpi["delivered"] else 0.0
 
 tabs = st.tabs(["Executive", "Delivery & fulfilment", "Regions", "Sellers",
-                "Demand & risk", "Data quality"])
+                "Demand & risk", "Delivery risk (model)", "Data quality"])
 
 # ------------------------------------------------------------------ executive
 with tabs[0]:
@@ -241,8 +242,79 @@ with tabs[4]:
                 "risk_tier": "Tier",
             })
 
-# ------------------------------------------------------------------ data quality
+# ------------------------------------------------------------------ delivery risk model
 with tabs[5]:
+    pred_path = settings.data_dir / "models" / "delay_predictions.parquet"
+    metrics_path = settings.exports_dir / "delay_model_metrics.json"
+    if not (pred_path.exists() and metrics_path.exists()):
+        st.info("The delay model has not been trained yet. Run `python -m src.pipeline`.")
+    else:
+        mx = json.loads(metrics_path.read_text(encoding="utf-8"))
+        best = mx["selected_model"]
+        rep = mx["report"][best]
+        st.warning(
+            "**Model predictions, not observed history.** Each order was scored at payment approval "
+            "by a model trained only on orders delivered before that month began. The *actual* "
+            "outcome column is shown for evaluation; it was unknown when the prediction was made.",
+            icon="🔮")
+        k = st.columns(4)
+        k[0].metric("Model", best, help="Chosen on Jan-Mar 2018 before the reported months were scored")
+        k[1].metric("ROC-AUC (Apr-Aug, monthly mean)", f"{rep['roc_auc_monthly_mean']:.3f}")
+        k[2].metric("PR-AUC (Apr-Aug, monthly mean)", f"{rep['pr_auc_monthly_mean']:.3f}",
+                    help=f"A random score would get the late rate, about {rep['late_rate_monthly_mean']:.3f}")
+        k[3].metric("Late orders caught in top 10%", f"{rep['recall_top10_monthly_mean']:.0%}",
+                    help=f"{rep['precision_top10_monthly_mean']:.0%} of the riskiest 10% were actually late")
+
+        @st.cache_data
+        def load_predictions(path: str) -> pd.DataFrame:
+            return pd.read_parquet(path)
+
+        preds = load_predictions(str(pred_path))
+        r1, r2, r3 = st.columns([2, 3, 2])
+        with r1:
+            month = st.selectbox("Purchase month", sorted(preds["month"].unique(), reverse=True))
+        with r2:
+            band_pick = st.multiselect("Predicted risk band", ["Critical", "High", "Medium", "Low"],
+                                       placeholder="All bands")
+        with r3:
+            rank_by = st.radio("Rank by", ["Probability", "Value at risk"], horizontal=True)
+        view = preds[preds["month"] == month]
+        if band_pick:
+            view = view[view["risk_band"].isin(band_pick)]
+        view = view.sort_values("value_at_risk" if rank_by == "Value at risk" else "p_late", ascending=False)
+        st.caption(
+            f"{len(view):,} orders shown for {month} "
+            f"({'reported period' if month in mx['report_months'] else 'model-selection period'}). "
+            "Value at risk = probability x order value. Reasons are the features pushing the score up "
+            "most (SHAP); they are available for the reported months.")
+        st.dataframe(
+            view[["order_id", "p_late", "risk_band", "value_at_risk", "top_reasons", "customer_state",
+                  "seller_state", "main_category", "promised_days", "is_late"]].head(300),
+            hide_index=True, width="stretch", height=380,
+            column_config={
+                "order_id": "Order", "p_late": st.column_config.ProgressColumn(
+                    "P(late)", min_value=0, max_value=1, format="percent"),
+                "risk_band": "Band",
+                "value_at_risk": st.column_config.NumberColumn("Value at risk (R$)", format="%.2f"),
+                "top_reasons": "Main reasons (model)", "customer_state": "Customer",
+                "seller_state": "Seller", "main_category": "Category", "promised_days": "Promised (d)",
+                "is_late": st.column_config.CheckboxColumn("Actually late"),
+            })
+        left, right = st.columns(2)
+        with left:
+            show(charts.calibration_chart(pd.DataFrame(mx["reliability_report"]), best))
+        with right:
+            show(charts.risk_band_bars(pd.DataFrame(mx["risk_bands_report"])))
+        st.caption(
+            "Ranking holds up (each band is later than the one below it), but the highest probabilities "
+            "overshoot: they are re-levelled on the most recent 45 days, and after the Feb-Mar 2018 "
+            "spike those days were worse than the months that followed. Use the probabilities as "
+            "relative risk.")
+        show(charts.importance_bars(pd.DataFrame(mx["feature_importance_shap"]), best))
+        st.caption("Full method, baselines and limitations: `reports/delay_model.md`.")
+
+# ------------------------------------------------------------------ data quality
+with tabs[6]:
     st.caption("How the numbers above were produced: Bronze (raw) -> Silver (typed, flagged) -> "
                "Gold (star schema). Full audit in `reports/data_quality_report.md`.")
     left, right = st.columns([3, 2])

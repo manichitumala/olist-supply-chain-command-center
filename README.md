@@ -26,6 +26,7 @@ A medallion-architecture analytics pipeline built on the [Olist Brazilian E-Comm
 - [Testing](#testing)
 - [Phase 1 — Data quality](#phase-1--data-quality)
 - [Key findings](#key-findings)
+- [Delivery-delay prediction](#delivery-delay-prediction)
 - [Order size statistics](#order-size-statistics-items-per-order)
 - [Dashboard](#dashboard)
 - [Known limitations](#known-limitations)
@@ -113,9 +114,10 @@ src/ingestion/       bronze: CSV -> Parquet, incremental by file hash
 src/quality/         bronze data-quality audit report
 src/transformation/  silver and gold builders (run the SQL in sql/)
 src/analytics/       scorecard, demand, logistics, risk, root cause, shared stats
+src/models/          delivery-delay prediction (walk-forward backtest, SHAP)
 src/dashboard/       Streamlit app (app.py, data.py, charts.py) + static export
 src/pipeline.py      end-to-end runner with per-stage timings
-sql/                 bronze audit, silver, gold, and KPI queries (DuckDB SQL)
+sql/                 bronze audit, silver, gold, KPI and ML-feature queries (DuckDB SQL)
 tests/               transformation, data-contract, analytics and dashboard tests
 reports/             generated markdown reports + charts (committed)
 data/exports/        generated CSVs consumed by the dashboard and reports (committed)
@@ -184,6 +186,25 @@ Full report: [`reports/data_quality_report.md`](reports/data_quality_report.md).
 
 **Multi-seller hypothesis: rejected for delays, but reviews are worse.** Orders spanning 2+ sellers are 1.3% of delivered orders (n = 1,275) and are late *less* often: 1.02% vs 6.85% for single-seller orders (two-proportion z-test p ≈ 2e-16). Yet customers rate them much worse: 2.86 vs 4.17 (Mann–Whitney p ≈ 6e-188), falling to 2.24 for 3+ sellers. This is an association, not a cause: these orders differ in basket size, sellers and categories. Split or partial deliveries are a plausible explanation, but Olist has no per-shipment timestamps to test it. See [`reports/root_cause_analysis.md`](reports/root_cause_analysis.md).
 
+## Delivery-delay prediction
+
+**Can we tell, when an order's payment is approved, whether it will arrive late?** Full write-up: [`reports/delay_model.md`](reports/delay_model.md).
+
+- **Prediction moment: payment approval.** Features use only what is known then: the order, its items and payment, the promised date, distance, and history built from orders *delivered before this order was placed*: the seller's record, the route's record, and the platform-wide late rate over the last 30 days. Carrier, transit and delivery timestamps are never features. Tests check that an order's history cannot include its own outcome or later deliveries.
+- **Monthly walk-forward backtest.** For each month of 2018, models train only on orders whose outcome was known before that month began, then score every order placed in it. Jan–Mar 2018 chose the model; **Apr–Aug 2018 (32,150 orders) are the reported results.** A first attempt with a single fixed split was abandoned: it tuned on the Feb–Mar 2018 delivery spike (~15% late) and tested on a calm period (~4%).
+
+| Model (Apr–Aug 2018, monthly averages) | ROC-AUC | PR-AUC | Late orders caught in riskiest 10% | Precision in riskiest 10% |
+|---|---:|---:|---:|---:|
+| Baseline: platform rate | 0.500 | 0.044 | 11% | 5% |
+| Baseline: seller history | 0.524 | 0.054 | 13% | 6% |
+| Logistic Regression ✔ | 0.749 | 0.132 | 34% | 15% |
+| Random Forest | 0.611 | 0.096 | 22% | 9% |
+| XGBoost | 0.633 | 0.092 | 25% | 10% |
+
+**Logistic Regression** was selected on Jan–Mar and holds up out of sample: PR-AUC is about 3× the late rate, and the riskiest 10% of orders hold a third of all late deliveries. The tree models overfit the shifting conditions. Predicted risk bands separate cleanly: orders predicted *Low* were 3.6% late, *Critical* 14.6%. The strongest signals are the promised delivery window, recent platform-wide delays, seller experience and order volume in the past week.
+
+Limits, stated plainly: probabilities are re-levelled on the most recent 45 days and overshoot after a spike (pooled Brier score is no better than a constant rate), so they are best used as **relative** risk. Most of what makes an order late happens after payment, so this is a tool for deciding which orders to watch, not a yes/no forecast.
+
 ## Order size statistics (items per order)
 
 This dataset's analogue of a "units per carton" metric: an order is the bundling/shipping unit, and how many product items get packed into it matters for pick-pack and packaging planning the same way units-per-carton does in retail logistics. Full descriptive statistics — mean, revenue-weighted average, p25/median/p75, harmonic mean, std dev, min, max — computed overall and broken down by distance band, region, and seller complexity: [`reports/order_size_stats.md`](reports/order_size_stats.md).
@@ -196,7 +217,7 @@ The median order is a single item, but the revenue-weighted average (1.27) sitti
 
 ## Dashboard
 
-A Streamlit **Supply Chain Command Center** (`streamlit run src/dashboard/app.py`) with six tabs, reading the gold Parquet layer directly. Customer-region and purchase-date filters sit above the tabs and recompute every order-level figure. All figures are labelled as historical observations, so model predictions can be added later without being confused with what actually happened.
+A Streamlit **Supply Chain Command Center** (`streamlit run src/dashboard/app.py`) with seven tabs, reading the gold Parquet layer directly. Customer-region and purchase-date filters sit above the tabs and recompute every order-level figure. Historical tabs show observations; the *Delivery risk (model)* tab shows predictions under an explicit banner, with each order's actual outcome alongside for evaluation.
 
 Design rules: one y-axis per chart (no dual axes), rates shown with 95% confidence intervals and their sample sizes, red/green used only where the colour means late/on time and always with a text label, and every chart has a hover tooltip.
 
@@ -207,6 +228,7 @@ Design rules: one y-axis per chart (no dual axes), rates shown with 95% confiden
 | Regions | Late rate by customer state with confidence intervals; transport hotspots |
 | Sellers | Late rate vs volume for ranked sellers, tiers, the 81 statistically flagged sellers |
 | Demand & risk | Weekly demand per category with anomaly weeks; demand patterns; risk index |
+| Delivery risk (model) | Out-of-sample delay predictions per order with reasons, calibration, risk bands. Labelled as predictions |
 | Data quality | Row counts per layer, pipeline timings, raw-data issues and how they're handled |
 
 <p align="center">
@@ -219,7 +241,7 @@ Design rules: one y-axis per chart (no dual axes), rates shown with 95% confiden
   <sub>Sellers — red points are sellers whose late rate is significantly above the platform rate, not just ranked low</sub>
 </p>
 
-More: [regions](docs/screenshots/regions.png) · [demand & risk](docs/screenshots/demand_risk.png) · [data quality](docs/screenshots/data_quality.png)
+More: [delivery risk model](docs/screenshots/delay_model.png) · [regions](docs/screenshots/regions.png) · [demand & risk](docs/screenshots/demand_risk.png) · [data quality](docs/screenshots/data_quality.png)
 
 A lightweight static version (`dashboard/index.html`, no server needed) is still regenerated by every pipeline run.
 
