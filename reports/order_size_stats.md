@@ -1,6 +1,6 @@
-# Order Size Statistics — Items per Order
+# Order Size Statistics - Items per Order
 
-This dataset's analogue of a "units per carton" metric: an order is the bundling/shipping unit, `n_items` is how many product units were packed into it. Weighted average is weighted by order revenue (`total_price`), n = 98,199 orders (cancelled/unavailable orders excluded, they have no items).
+An order is the bundling/shipping unit; `n_items` is how many product units it held. Weighted average is weighted by order item value. n = 98,199 orders (cancelled/unavailable orders and orders with no items excluded).
 
 ## Overall
 
@@ -8,7 +8,7 @@ This dataset's analogue of a "units per carton" metric: an order is the bundling
 |:-----------|-----------:|-------:|--------------------------:|------:|---------:|------:|----------------:|----------:|------:|------:|
 | ALL ORDERS |      98199 | 1.1416 |                    1.2668 |     1 |        1 |     1 |          1.0579 |    0.5376 |     1 |    21 |
 
-## By distance band (seller → customer)
+## By distance band (seller -> customer)
 
 | distance_band   |   n_orders |   mean |   weighted_avg_by_revenue |   p25 |   median |   p75 |   harmonic_mean |   std_dev |   min |   max |
 |:----------------|-----------:|-------:|--------------------------:|------:|---------:|------:|----------------:|----------:|------:|------:|

@@ -1,16 +1,16 @@
-distance_band,region,n_orders,late_rate_pct,avg_transit_days
-1000+ km,Northeast,8434,14.8,17.08
-0-100 km,Northeast,82,10.98,4.9
-300-500 km,Northeast,61,9.84,10.67
-1000+ km,North,1769,9.67,19.32
-1000+ km,South,1633,8.94,13.78
-500-1000 km,Central-West,3796,8.77,11.59
-500-1000 km,Southeast,14800,8.68,10.46
-300-500 km,Central-West,226,8.41,12.17
-300-500 km,Southeast,19647,7.94,9.21
-1000+ km,Southeast,2130,7.93,10.89
-500-1000 km,South,6969,7.72,12.07
-500-1000 km,Northeast,417,7.19,12.59
-100-300 km,Southeast,12447,6.51,6.78
-0-100 km,Southeast,17176,6.46,3.36
-1000+ km,Central-West,1449,6.14,13.39
+distance_band,region,n_orders,n_late,avg_transit_days,late_rate_pct,late_ci_low_pct,late_ci_high_pct
+1000+ km,Northeast,8434,1110.0,17.08,13.16,12.46,13.9
+1000+ km,North,1769,151.0,19.32,8.54,7.32,9.93
+1000+ km,South,1633,130.0,13.78,7.96,6.74,9.37
+300-500 km,Central-West,226,18.0,12.17,7.96,5.1,12.24
+500-1000 km,Southeast,14800,1098.0,10.46,7.42,7.01,7.85
+500-1000 km,Central-West,3796,268.0,11.59,7.06,6.29,7.92
+300-500 km,Southeast,19646,1372.0,9.21,6.98,6.64,7.35
+1000+ km,Southeast,2130,142.0,10.89,6.67,5.68,7.81
+500-1000 km,South,6968,456.0,12.07,6.54,5.99,7.15
+500-1000 km,Northeast,417,26.0,12.59,6.24,4.29,8.98
+1000+ km,Central-West,1449,77.0,13.39,5.31,4.27,6.59
+100-300 km,Southeast,12443,659.0,6.78,5.3,4.92,5.7
+300-500 km,South,3806,182.0,9.11,4.78,4.15,5.51
+0-100 km,Southeast,17174,777.0,3.36,4.52,4.22,4.85
+100-300 km,South,877,33.0,7.56,3.76,2.69,5.24

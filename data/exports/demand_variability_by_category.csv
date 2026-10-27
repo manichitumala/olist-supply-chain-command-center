@@ -1,73 +1,75 @@
-category_en,n_weeks_active,mean_weekly_demand,std_weekly_demand,total_items,total_revenue,coefficient_of_variation,demand_class,anomaly_weeks,anomaly_frequency
-computers,39,5.21,7.05,203,222963.13,1.35,Highly Variable,1,0.03
-food,77,6.61,6.95,509,29243.51,1.05,Highly Variable,3,0.04
-construction_tools_construction,67,13.84,13.26,927,144550.19,0.96,Variable,2,0.03
-construction_tools_lights,45,6.71,6.39,302,40002.0,0.95,Variable,2,0.04
-industry_commerce_and_business,57,4.7,4.28,268,39669.61,0.91,Variable,4,0.07
-art,61,3.41,3.07,208,24167.64,0.9,Variable,3,0.05
-cine_photo,36,2.0,1.76,72,6933.46,0.88,Variable,1,0.03
-signaling_and_security,56,3.55,3.07,199,21509.23,0.86,Variable,5,0.09
-books_technical,59,4.53,3.88,267,19096.06,0.86,Variable,3,0.05
-drinks,61,6.2,5.31,378,22378.71,0.86,Variable,3,0.05
-agro_industry_and_commerce,61,3.48,2.92,212,72530.47,0.84,Variable,3,0.05
-furniture_bedroom,53,2.06,1.69,109,20028.78,0.82,Variable,2,0.04
-home_construction,70,8.61,6.84,603,83010.12,0.8,Variable,2,0.03
-diapers_and_hygiene,24,1.58,1.25,38,1538.79,0.79,Variable,2,0.08
-stationery,86,29.13,22.76,2505,229593.84,0.78,Variable,3,0.04
-electronics,84,32.8,25.62,2755,157079.54,0.78,Variable,5,0.06
-home_appliances,76,10.12,7.63,769,80001.24,0.75,Variable,2,0.03
-arts_and_craftmanship,9,2.67,2.0,24,1814.01,0.75,Variable,1,0.11
-toys,89,45.88,34.33,4083,479808.54,0.75,Variable,3,0.03
-consoles_games,89,12.66,9.44,1127,154927.27,0.74,Variable,1,0.01
-fixed_telephony,79,3.3,2.46,261,57824.21,0.74,Variable,5,0.06
-food_drink,68,4.06,2.94,276,15119.48,0.72,Variable,3,0.04
-audio,83,4.37,3.13,363,50668.6,0.72,Variable,2,0.02
-christmas_supplies,49,3.1,2.21,152,8787.83,0.71,Variable,2,0.04
-watches_gifts,88,67.84,48.3,5970,1198185.21,0.71,Variable,4,0.04
-kitchen_dining_laundry_garden_furniture,72,3.88,2.75,279,46070.37,0.71,Variable,2,0.03
-fashion_male_clothing,59,2.22,1.57,131,10748.82,0.7,Variable,2,0.03
-garden_tools,88,49.18,33.8,4328,481009.94,0.69,Variable,1,0.01
-unknown,86,18.73,12.75,1611,183813.13,0.68,Variable,5,0.06
-computers_accessories,88,88.42,59.78,7781,904322.02,0.68,Variable,4,0.04
-fashion_underwear_beach,59,2.22,1.49,131,9541.55,0.67,Variable,3,0.05
-furniture_mattress_and_upholstery,24,1.58,1.06,38,4368.08,0.67,Variable,3,0.12
-furniture_living_room,79,6.34,4.22,501,68638.56,0.66,Variable,4,0.05
-fashio_female_clothing,31,1.55,1.03,48,2803.64,0.66,Variable,3,0.1
-books_general_interest,83,6.58,4.35,546,45622.29,0.66,Variable,4,0.05
-fashion_sport,22,1.36,0.9,30,2119.51,0.66,Variable,1,0.04
-construction_tools_safety,51,3.71,2.44,189,39589.02,0.66,Variable,1,0.02
-market_place,84,3.69,2.41,310,28288.47,0.65,Variable,3,0.04
-home_confort,77,5.64,3.67,434,58572.04,0.65,Variable,5,0.06
-auto,88,47.77,30.72,4204,586585.73,0.64,Variable,1,0.01
-small_appliances_home_oven_and_coffee,28,2.71,1.74,76,47445.71,0.64,Variable,2,0.07
-costruction_tools_garden,65,3.6,2.28,234,25552.18,0.63,Variable,1,0.02
-party_supplies,27,1.59,1.01,43,4485.18,0.63,Variable,3,0.11
-fashion_shoes,77,3.38,2.14,260,23352.88,0.63,Variable,4,0.05
-office_furniture,85,19.88,12.52,1690,273580.7,0.63,Variable,3,0.04
-musical_instruments,82,8.16,5.1,669,187788.44,0.62,Variable,3,0.04
-air_conditioning,75,3.93,2.43,295,54723.16,0.62,Variable,6,0.08
-health_beauty,90,107.04,66.14,9634,1255695.13,0.62,Variable,4,0.04
-pet_shop,88,22.07,13.63,1942,213766.63,0.62,Variable,3,0.03
-costruction_tools_tools,37,2.78,1.72,103,15903.95,0.62,Variable,1,0.03
-home_appliances_2,72,3.26,2.01,235,110649.74,0.62,Variable,2,0.03
-books_imported,34,1.76,1.05,60,4639.85,0.59,Variable,3,0.09
-tablets_printing_image,45,1.84,1.09,83,7528.41,0.59,Variable,5,0.11
-housewares,88,78.58,45.43,6915,626825.8,0.58,Variable,6,0.07
-flowers,18,1.83,1.04,33,1110.04,0.57,Variable,2,0.11
-baby,88,34.58,19.55,3043,410312.2,0.56,Variable,1,0.01
-fashion_bags_accessories,90,22.5,12.55,2025,151622.75,0.56,Variable,2,0.02
-furniture_decor,90,92.2,49.39,8298,727465.05,0.54,Variable,1,0.01
-telephony,88,51.44,27.35,4527,322342.64,0.53,Variable,2,0.02
-bed_bath_table,88,126.1,66.93,11097,1035964.06,0.53,Variable,1,0.01
-small_appliances,85,7.89,4.14,671,187907.26,0.52,Variable,3,0.04
-perfumery,87,39.1,19.8,3402,396599.31,0.51,Variable,2,0.02
-dvds_blu_ray,46,1.35,0.67,62,4559.49,0.5,Variable,3,0.06
-luggage_accessories,84,12.95,6.46,1088,140111.38,0.5,Stable,3,0.04
-sports_leisure,88,97.61,48.33,8590,979740.92,0.5,Stable,1,0.01
-cool_stuff,88,42.94,20.02,3779,620770.49,0.47,Stable,6,0.07
-music,28,1.36,0.62,38,6034.35,0.46,Stable,2,0.07
-home_comfort_2,19,1.58,0.69,30,760.27,0.44,Stable,2,0.1
-cds_dvds_musicals,10,1.4,0.52,14,730.0,0.37,Stable,0,0.0
-la_cuisine,12,1.17,0.39,14,2054.99,0.33,Stable,2,0.17
-fashion_childrens_clothes,8,1.0,0.0,8,569.85,0.0,Stable,0,0.0
-security_and_services,2,1.0,0.0,2,283.29,0.0,Insufficient data,0,0.0
+category_en,n_weeks,n_weeks_active,zero_week_share,total_items,total_revenue,mean_weekly_demand,std_weekly_demand,coefficient_of_variation,adi,cv2_nonzero,anomaly_weeks,demand_class,sbc_class,anomaly_frequency
+security_and_services,86.0,2.0,0.977,2.0,283.29,0.023,0.152,6.519,43.0,0.0,2.0,Insufficient data,Insufficient data,0.023
+portateis_cozinha_e_preparadores_de_alimentos,86.0,5.0,0.942,13.0,3415.83,0.151,0.695,4.596,17.2,0.34,4.0,Insufficient data,Insufficient data,0.047
+arts_and_craftmanship,86.0,9.0,0.895,24.0,1814.01,0.279,1.025,3.673,9.556,0.562,5.0,Insufficient data,Insufficient data,0.058
+pc_gamer,86.0,7.0,0.919,8.0,1306.95,0.093,0.33,3.547,12.286,0.109,7.0,Insufficient data,Insufficient data,0.081
+fashion_childrens_clothes,86.0,8.0,0.907,8.0,569.85,0.093,0.292,3.141,10.75,0.0,8.0,Insufficient data,Insufficient data,0.093
+cds_dvds_musicals,86.0,10.0,0.884,14.0,730.0,0.163,0.482,2.959,8.6,0.136,4.0,Insufficient data,Insufficient data,0.047
+la_cuisine,86.0,12.0,0.86,14.0,2054.99,0.163,0.43,2.642,7.167,0.111,2.0,Insufficient data,Insufficient data,0.023
+flowers,86.0,18.0,0.791,33.0,1110.04,0.384,0.883,2.302,4.778,0.324,4.0,Insufficient data,Insufficient data,0.047
+computers,86.0,39.0,0.547,203.0,222963.13,2.36,5.384,2.281,2.205,1.832,2.0,Highly Variable,Lumpy,0.023
+diapers_and_hygiene,86.0,23.0,0.733,37.0,1403.89,0.43,0.965,2.242,3.739,0.623,3.0,Insufficient data,Insufficient data,0.035
+fashion_sport,86.0,22.0,0.744,30.0,2119.51,0.349,0.748,2.144,3.909,0.438,5.0,Insufficient data,Insufficient data,0.058
+home_comfort_2,86.0,19.0,0.779,30.0,760.27,0.349,0.732,2.098,4.526,0.192,9.0,Insufficient data,Insufficient data,0.105
+furniture_mattress_and_upholstery,86.0,24.0,0.721,38.0,4368.08,0.442,0.902,2.042,3.583,0.448,4.0,Insufficient data,Insufficient data,0.047
+party_supplies,86.0,26.0,0.698,42.0,4460.28,0.488,0.93,1.904,3.308,0.401,4.0,Insufficient data,Insufficient data,0.047
+small_appliances_home_oven_and_coffee,86.0,28.0,0.674,76.0,47445.71,0.884,1.612,1.824,3.071,0.411,3.0,Insufficient data,Insufficient data,0.035
+cine_photo,86.0,36.0,0.581,72.0,6933.46,0.837,1.502,1.794,2.389,0.771,6.0,Insufficient data,Insufficient data,0.07
+fashio_female_clothing,86.0,30.0,0.651,47.0,2748.74,0.547,0.966,1.768,2.867,0.441,3.0,Insufficient data,Insufficient data,0.035
+music,86.0,28.0,0.674,38.0,6034.35,0.442,0.729,1.651,3.071,0.21,8.0,Insufficient data,Insufficient data,0.093
+construction_tools_lights,86.0,44.0,0.488,301.0,39972.0,3.5,5.71,1.631,1.955,0.878,5.0,Highly Variable,Lumpy,0.058
+books_imported,86.0,34.0,0.605,60.0,4639.85,0.698,1.085,1.556,2.529,0.351,6.0,Insufficient data,Insufficient data,0.07
+costruction_tools_tools,86.0,37.0,0.57,103.0,15903.95,1.198,1.781,1.487,2.324,0.381,7.0,Highly Variable,Intermittent,0.081
+industry_commerce_and_business,86.0,56.0,0.349,264.0,39310.01,3.07,4.144,1.35,1.536,0.839,5.0,Highly Variable,Lumpy,0.058
+furniture_bedroom,86.0,53.0,0.384,109.0,20028.78,1.267,1.662,1.311,1.623,0.677,5.0,Highly Variable,Lumpy,0.058
+signaling_and_security,86.0,56.0,0.349,199.0,21509.23,2.314,3.003,1.298,1.536,0.748,5.0,Highly Variable,Lumpy,0.058
+christmas_supplies,86.0,49.0,0.43,152.0,8787.83,1.767,2.268,1.283,1.755,0.508,3.0,Highly Variable,Lumpy,0.035
+tablets_printing_image,86.0,45.0,0.477,83.0,7528.41,0.965,1.212,1.256,1.911,0.347,5.0,Insufficient data,Insufficient data,0.058
+art,86.0,60.0,0.302,207.0,24070.14,2.407,3.023,1.256,1.433,0.799,7.0,Highly Variable,Lumpy,0.081
+books_technical,86.0,58.0,0.326,266.0,18829.06,3.093,3.849,1.244,1.483,0.719,6.0,Highly Variable,Lumpy,0.07
+construction_tools_construction,86.0,66.0,0.233,926.0,144525.2,10.767,13.041,1.211,1.303,0.894,5.0,Highly Variable,Erratic,0.058
+drinks,86.0,60.0,0.302,377.0,22344.71,4.384,5.292,1.207,1.433,0.714,5.0,Highly Variable,Lumpy,0.058
+construction_tools_safety,86.0,51.0,0.407,189.0,39589.02,2.198,2.62,1.192,1.686,0.435,5.0,Highly Variable,Intermittent,0.058
+food,86.0,75.0,0.128,501.0,28699.67,5.826,6.913,1.187,1.147,1.101,4.0,Highly Variable,Erratic,0.047
+agro_industry_and_commerce,86.0,61.0,0.291,212.0,72530.47,2.465,2.925,1.187,1.41,0.708,6.0,Highly Variable,Lumpy,0.07
+dvds_blu_ray,86.0,46.0,0.465,62.0,4559.49,0.721,0.835,1.159,1.87,0.25,3.0,Insufficient data,Insufficient data,0.035
+fashion_male_clothing,86.0,58.0,0.326,130.0,10723.92,1.512,1.664,1.101,1.483,0.491,5.0,Highly Variable,Lumpy,0.058
+fashion_underwear_beach,86.0,59.0,0.314,131.0,9541.55,1.523,1.607,1.055,1.458,0.448,4.0,Highly Variable,Intermittent,0.047
+home_construction,86.0,70.0,0.186,603.0,83010.12,7.012,7.029,1.002,1.229,0.631,2.0,Highly Variable,Erratic,0.023
+food_drink,86.0,68.0,0.209,276.0,15119.48,3.209,3.095,0.964,1.265,0.525,3.0,Variable,Erratic,0.035
+costruction_tools_garden,86.0,64.0,0.256,232.0,25472.2,2.698,2.535,0.94,1.344,0.4,5.0,Variable,Intermittent,0.058
+kitchen_dining_laundry_garden_furniture,86.0,70.0,0.186,276.0,45507.37,3.209,2.927,0.912,1.229,0.49,2.0,Variable,Erratic,0.023
+home_appliances,86.0,76.0,0.116,769.0,80001.24,8.942,7.872,0.88,1.132,0.568,3.0,Variable,Erratic,0.035
+fixed_telephony,86.0,77.0,0.105,256.0,57119.33,2.977,2.557,0.859,1.117,0.556,5.0,Variable,Erratic,0.058
+electronics,86.0,83.0,0.035,2754.0,156971.55,32.023,25.817,0.806,1.036,0.592,5.0,Variable,Erratic,0.058
+home_appliances_2,86.0,72.0,0.163,235.0,110649.74,2.733,2.199,0.805,1.194,0.378,2.0,Variable,Smooth,0.023
+stationery,86.0,85.0,0.012,2504.0,229531.94,29.116,22.778,0.782,1.012,0.593,3.0,Variable,Erratic,0.035
+air_conditioning,86.0,74.0,0.14,285.0,53016.07,3.314,2.55,0.769,1.162,0.369,5.0,Variable,Smooth,0.058
+home_confort,86.0,77.0,0.105,434.0,58572.04,5.047,3.877,0.768,1.117,0.423,5.0,Variable,Smooth,0.058
+audio,86.0,80.0,0.07,360.0,50496.71,4.186,3.216,0.768,1.075,0.479,2.0,Variable,Smooth,0.023
+fashion_shoes,86.0,76.0,0.116,259.0,23322.89,3.012,2.288,0.76,1.132,0.393,4.0,Variable,Smooth,0.047
+furniture_living_room,86.0,79.0,0.081,501.0,68638.56,5.826,4.401,0.755,1.089,0.442,4.0,Variable,Smooth,0.047
+consoles_games,86.0,86.0,0.0,1115.0,150930.02,12.965,9.449,0.729,1.0,0.531,1.0,Variable,Erratic,0.012
+toys,86.0,86.0,0.0,4054.0,475380.35,47.14,34.195,0.725,1.0,0.526,3.0,Variable,Erratic,0.035
+books_general_interest,86.0,81.0,0.058,544.0,45477.79,6.326,4.476,0.708,1.062,0.413,4.0,Variable,Smooth,0.047
+market_place,86.0,82.0,0.047,297.0,26982.28,3.453,2.409,0.698,1.049,0.417,2.0,Variable,Smooth,0.023
+unknown,86.0,84.0,0.023,1586.0,178476.67,18.442,12.825,0.695,1.024,0.449,5.0,Variable,Smooth,0.058
+watches_gifts,86.0,86.0,0.0,5960.0,1194400.17,69.302,47.884,0.691,1.0,0.477,3.0,Variable,Smooth,0.035
+musical_instruments,86.0,82.0,0.047,669.0,187788.44,7.779,5.266,0.677,1.049,0.39,3.0,Variable,Smooth,0.035
+garden_tools,86.0,86.0,0.0,4321.0,479566.06,50.244,33.45,0.666,1.0,0.443,1.0,Variable,Smooth,0.012
+computers_accessories,86.0,85.0,0.012,7754.0,902515.95,90.163,59.345,0.658,1.012,0.416,4.0,Variable,Smooth,0.047
+office_furniture,86.0,82.0,0.047,1683.0,271566.92,19.57,12.746,0.651,1.049,0.358,2.0,Variable,Smooth,0.023
+auto,86.0,85.0,0.012,4189.0,584710.1,48.709,30.448,0.625,1.012,0.374,1.0,Variable,Smooth,0.012
+pet_shop,86.0,86.0,0.0,1938.0,213076.95,22.535,13.43,0.596,1.0,0.355,3.0,Variable,Smooth,0.035
+health_beauty,86.0,86.0,0.0,9565.0,1249445.59,111.221,64.603,0.581,1.0,0.337,3.0,Variable,Smooth,0.035
+housewares,86.0,85.0,0.012,6882.0,624151.15,80.023,44.943,0.562,1.012,0.3,6.0,Variable,Smooth,0.07
+baby,86.0,86.0,0.0,3029.0,408592.14,35.221,19.305,0.548,1.0,0.3,1.0,Variable,Smooth,0.012
+small_appliances,86.0,85.0,0.012,671.0,187907.26,7.802,4.206,0.539,1.012,0.275,3.0,Variable,Smooth,0.035
+luggage_accessories,86.0,83.0,0.035,1087.0,140093.38,12.64,6.697,0.53,1.036,0.236,3.0,Variable,Smooth,0.035
+fashion_bags_accessories,86.0,86.0,0.0,2014.0,151138.75,23.419,12.059,0.515,1.0,0.265,2.0,Variable,Smooth,0.023
+telephony,86.0,85.0,0.012,4515.0,322018.98,52.5,26.76,0.51,1.012,0.245,2.0,Variable,Smooth,0.023
+perfumery,86.0,84.0,0.023,3372.0,391690.41,39.209,19.926,0.508,1.024,0.229,2.0,Variable,Smooth,0.023
+bed_bath_table,86.0,86.0,0.0,11077.0,1034418.78,128.802,65.27,0.507,1.0,0.257,1.0,Variable,Smooth,0.012
+furniture_decor,86.0,86.0,0.0,8227.0,721395.37,95.663,47.494,0.496,1.0,0.246,1.0,Stable,Smooth,0.012
+sports_leisure,86.0,85.0,0.012,8557.0,976713.28,99.5,47.259,0.475,1.012,0.211,2.0,Stable,Smooth,0.023
+cool_stuff,86.0,86.0,0.0,3769.0,619482.12,43.826,19.38,0.442,1.0,0.196,5.0,Stable,Smooth,0.058

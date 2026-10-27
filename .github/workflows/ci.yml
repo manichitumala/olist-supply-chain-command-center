@@ -1,0 +1,20 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+      # Builds bronze -> silver -> gold from the synthetic fixture dataset and
+      # runs every transformation, data-contract and analytics test. Tests that
+      # need the full Kaggle data are skipped here and run locally.
+      - run: python -m pytest -v
