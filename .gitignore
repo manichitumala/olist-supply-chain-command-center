@@ -4,3 +4,13 @@ __pycache__/
 venv/
 .env
 *.log
+.pytest_cache/
+
+# Raw Kaggle data and generated warehouse layers (rebuilt by `python -m src.pipeline`)
+data/raw/
+data/bronze/
+data/silver/
+data/gold/
+data/*.duckdb
+data/*.duckdb.wal
+data/run_log.json

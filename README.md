@@ -3,12 +3,12 @@
 **E-Commerce Supply Chain Command Center: Delivery Performance, Seller Intelligence & Operational Risk Analytics**
 
 ![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18-4169E1?logo=postgresql&logoColor=white)
-![Pandas](https://img.shields.io/badge/pandas-2.x-150458?logo=pandas&logoColor=white)
-![Chart.js](https://img.shields.io/badge/Chart.js-4.5-FF6384?logo=chartdotjs&logoColor=white)
+![DuckDB](https://img.shields.io/badge/DuckDB-1.x-FFF000?logo=duckdb&logoColor=black)
+![Parquet](https://img.shields.io/badge/storage-Parquet-50ABF1)
+![pytest](https://img.shields.io/badge/tests-pytest-0A9EDC?logo=pytest&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-informational)
 
-A medallion-architecture analytics pipeline built on the [Olist Brazilian E-Commerce dataset](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) (~99k real, anonymised orders, 2016–2018). This is **not a sales dashboard** — it's an investigation into why orders are delayed, which sellers/products/regions carry the most operational risk, and what the business should do about it.
+A medallion-architecture analytics pipeline built on the [Olist Brazilian E-Commerce dataset](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) (99,441 real, anonymised orders, 2016–2018). This is **not a sales dashboard** — it's an investigation into why orders are delayed, which sellers/products/regions carry the most operational risk, and what the business should do about it.
 
 <p align="center">
   <img src="docs/screenshots/executive.png" alt="Executive dashboard tab" width="100%">
@@ -16,17 +16,34 @@ A medallion-architecture analytics pipeline built on the [Olist Brazilian E-Comm
 
 ## Contents
 
+- [What changed in v2, and why](#what-changed-in-v2-and-why)
 - [Business questions](#business-questions)
 - [Architecture](#architecture)
 - [Star schema](#star-schema-gold-layer)
 - [Repository layout](#repository-layout)
 - [Running it](#running-it)
+- [Testing](#testing)
 - [Phase 1 — Data quality](#phase-1--data-quality)
 - [Key findings](#key-findings)
 - [Order size statistics](#order-size-statistics-items-per-order)
 - [Dashboard](#dashboard)
 - [Known limitations](#known-limitations)
 - [License](#license)
+
+## What changed in v2, and why
+
+v1 ran on PostgreSQL with no automated tests. A review against the raw data found several metric definitions that produced wrong or misleading numbers. v2 moves the pipeline to DuckDB + Parquet, fixes those definitions, and pins each fix with a test. **Every figure in this README is from v2**; v1 figures are shown below only to document the corrections.
+
+| # | Problem in v1 | Fix in v2 | Effect |
+|---|---|---|---|
+| 1 | On-time compared `delivered_ts <= estimated_ts`, but the estimate is always midnight, so orders delivered **on** their due date counted as late | Compare calendar dates | On-time **91.89% → 93.23%** (1,292 orders reclassified) |
+| 2 | Multi-seller late rate was an unweighted average of the 2-seller (n=1,216) and 3+-seller (n=59) band rates | Order-weighted rate + significance test | **0.7% → 1.02%** (vs 6.85% single-seller, p≈2e-16) |
+| 3 | Seller and category rates were averaged over **item** rows, so a 3-item order counted 3 times | New `fact_seller_order` grain; categories counted per order | Up to 38 points of change in an individual seller's on-time rate |
+| 4 | Sellers ranked from 5 orders, min-max scored, fixed tier cut-offs | ≥30 orders to rank, empirical-Bayes shrinkage, percentile scoring, explicitly relative tiers, plus a significance-based late-rate flag | 1,794 → **634** ranked sellers; **81** flagged with statistical evidence |
+| 5 | Demand CV and Z-scores ignored zero-sales weeks and included the near-empty 2016 / Sep–Oct 2018 edges | Complete category × week grid, full weeks inside a fixed analysis window | Sparse categories correctly show as volatile/intermittent |
+| 6 | Revenue included cancelled orders; cancellation rate excluded the 775 orders with no items | `fact_order` holds all 99,441 orders; GMV excludes cancelled/unavailable | Cancellation rate uses the full denominator (0.63%) |
+| 7 | Risk tiers used absolute cut-offs on min-max scores, producing "0 High Risk" as an artefact | Percentile components, relative tiers (top 20% / 40% / 40%) | Index is now clearly a ranking, not a probability |
+| 8 | 13 products in categories missing from the translation file were relabelled `unknown` | Keep the Portuguese category name | No silent data loss |
 
 ## Business questions
 
@@ -42,103 +59,127 @@ A medallion-architecture analytics pipeline built on the [Olist Brazilian E-Comm
 
 ```
    OLIST RAW CSVs (9 files)
-            │
+            │  SHA-256 per file: unchanged files are skipped (incremental)
             ▼
     ┌───────────────┐
-    │  BRONZE LAYER │   raw, untyped, 1:1 with source CSVs
-    └───────┬───────┘
-            │  data quality audit (sql/bronze/02_data_quality_checks.sql)
+    │  BRONZE LAYER │   Parquet, every column as text, + lineage columns
+    └───────┬───────┘   (_source_file, _source_sha256, _ingested_at)
+            │  data quality audit (sql/bronze/01_data_quality_checks.sql)
             ▼
     ┌───────────────┐
-    │  SILVER LAYER │   typed, deduplicated, DQ-flagged
+    │  SILVER LAYER │   typed, deduplicated, DQ-flagged          -> data/silver/*.parquet
     └───────┬───────┘
-            │  feature engineering
             ▼
     ┌───────────────┐
-    │   GOLD LAYER  │   star schema: dims + fact_order_item + fact_delivery
+    │   GOLD LAYER  │   star schema (dims + 3 fact grains)       -> data/gold/*.parquet
     └───────┬───────┘
-            │
+            │                      enforced by pytest data contracts
    ┌────────┼─────────────┐
    ▼        ▼              ▼
  SQL KPIs  Python Stats   Risk Model
    └────────┼─────────────┘
             ▼
-   dashboard/index.html  (static HTML "executive dashboard")
+   reports/*.md, data/exports/*.csv, dashboard/data.js
 ```
 
-Stack: **Python → PostgreSQL → SQL transformations → static HTML dashboard**. This is the "build locally first" fallback of the classic recommended stack for this kind of project — AWS/QuickSight require cloud infrastructure that isn't part of this repo's scope, so the same medallion architecture and star schema are implemented against local PostgreSQL, with a self-contained HTML/Chart.js dashboard standing in for QuickSight. Every SQL/Python artifact here would port to Athena + QuickSight largely unchanged — the `gold` schema tables map directly to Athena tables over S3 Parquet.
+Stack: **Python → DuckDB (SQL) → Parquet → reports + dashboard**. DuckDB is an in-process analytical database: no server to run, which makes the pipeline reproducible in CI and Docker. At ~100k orders it rebuilds every layer and analysis end to end in **under 10 seconds** on a laptop. The gold Parquet files are the hand-off point for BI tools.
 
 ## Star schema (gold layer)
 
 ```
-                    dim_customer
-                         │
-dim_date ──────── fact_order_item ─────── dim_product
-                         │
-                         ▼
-                    dim_seller ──────── dim_geography
-                         │
-                         ▼
-                  fact_delivery
+                       dim_customer
+                            │
+dim_date ──── fact_order_item ──── dim_product
+                 │          │
+                 │      dim_seller ──── dim_geography
+                 ▼
+         fact_seller_order  (order × seller)
+                 │
+                 ▼
+            fact_order      (order, all 99,441)
 ```
 
-**Grain of `fact_order_item` = one product item within one order** (not order-level), so a seller's operational problems inside a multi-seller order stay visible instead of being averaged away. `fact_delivery` is order-grain, since Olist captures delivery timestamps once per order, not once per shipment/seller.
+| Fact table | Grain | Used for |
+|---|---|---|
+| `fact_order_item` | one product unit in one order | demand, revenue, distance |
+| `fact_seller_order` | one seller in one order | every seller-level metric |
+| `fact_order` | one order — **including** the 775 with no items | headline KPIs, delivery, lead times |
 
 ## Repository layout
 
 ```
-sql/bronze/   raw staging schema + the data-quality audit queries
-sql/silver/   cleaning/typing/dedup transformations (bronze -> silver)
-sql/gold/     star schema build (dims, fact_order_item, fact_delivery)
-sql/kpis/     the "SQL KPIs" arm — dashboard-ready queries per business area
-python/       loaders, the DQ report, and every analysis phase (see below)
-reports/      generated markdown reports + charts (committed, not gitignored)
-data/exports/ generated CSVs consumed by the dashboard and reports
-dashboard/    the static HTML executive dashboard (index.html + data.js)
-docs/         README screenshots
+src/ingestion/       bronze: CSV -> Parquet, incremental by file hash
+src/quality/         bronze data-quality audit report
+src/transformation/  silver and gold builders (run the SQL in sql/)
+src/analytics/       scorecard, demand, logistics, risk, root cause, shared stats
+src/dashboard/       static dashboard export (data.js)
+src/pipeline.py      end-to-end runner with per-stage timings
+sql/                 bronze audit, silver, gold, and KPI queries (DuckDB SQL)
+tests/               transformation tests, data contracts, analytics unit tests
+reports/             generated markdown reports + charts (committed)
+data/exports/        generated CSVs consumed by the dashboard and reports (committed)
+dashboard/           static HTML dashboard (index.html + data.js)
 ```
 
 ## Running it
 
-Requires PostgreSQL running locally and the raw Olist CSVs downloaded from Kaggle (not committed to this repo — large + third-party licensed). Point `OLIST_RAW_DIR` at wherever you extracted them (defaults to `python/config.py`'s hardcoded path).
+Download the dataset from Kaggle (not committed: large, third-party licensed) and point `OLIST_RAW_DIR` at the extracted folder (default `data/raw/`).
 
 ```bash
 pip install -r requirements.txt
-cd python
-python run_pipeline.py    # runs every stage, in order, end to end
+export OLIST_RAW_DIR=/path/to/olist        # PowerShell: $env:OLIST_RAW_DIR="C:\path\to\olist"
+python -m src.pipeline                     # incremental bronze, rebuild everything else
+python -m src.pipeline --force             # re-ingest all source files
 ```
 
-Or run any stage standalone once bronze/silver/gold exist, e.g. `python risk_index.py` after changing the risk weights. Then open `dashboard/index.html` in a browser (needs internet for the Google Fonts / Chart.js CDN imports).
+Each stage also runs on its own, e.g. `python -m src.analytics.risk_index` after changing the risk weights. Stage timings are written to `data/run_log.json`. Then open `dashboard/index.html` in a browser.
+
+## Testing
+
+```bash
+python -m pytest
+```
+
+- **Transformation tests** build bronze → silver → gold from a small synthetic Olist dataset (`tests/conftest.py`). Each row exists to trigger one rule, including every v1 bug above. This runs in CI with no Kaggle download.
+- **Data contracts** (`tests/test_data_quality.py`): primary-key uniqueness, row counts and money reconciling across layers and grains, orphan checks, status domains, non-negative lead times. They run on the synthetic warehouse, and on the real one when it has been built locally.
+- **Analytics unit tests** cover the statistics (Wilson intervals, shrinkage, percentile scoring, tiering) and the demand classification.
+
+A mutation check confirms the suite works: putting the v1 timestamp comparison back fails two tests.
 
 ## Phase 1 — Data quality
 
-Full report: [`reports/data_quality_report.md`](reports/data_quality_report.md). The bronze-layer audit found real issues that directly shaped the silver-layer cleaning rules — nothing was silently fixed; every issue is carried through to gold as an explicit boolean flag.
+Full report: [`reports/data_quality_report.md`](reports/data_quality_report.md). The bronze-layer audit found real issues that directly shaped the silver-layer cleaning rules. Nothing is silently fixed; every issue is carried through to gold as an explicit flag.
 
-| Check | Finding | Silver-layer handling |
+| Check | Finding | Silver/gold handling |
 |---|---|---|
-| Products missing category | 610 of 32,951 | Coalesced to `'unknown'` |
+| Products missing category | 610 of 32,951 | `'unknown'` |
+| Category missing from translation file | 13 products (`pc_gamer`, `portateis_cozinha_…`) | Keep the Portuguese name |
 | Carrier handover before payment approved | 1,359 orders | Flagged `is_carrier_before_approved`, excluded from lead-time analysis |
 | Delivered before carrier handover | 23 orders | Flagged `is_delivered_before_carrier`, excluded |
 | `delivered` status with no delivered timestamp | 8 orders | Flagged `is_missing_delivered_date_bug`, excluded |
-| Duplicate reviews | 814 duplicate `review_id`s / 551 orders with >1 review | Deduplicated to the latest-answered review per order |
-| Customer/seller zip prefixes with no geolocation sample | 157 / 7 | Falls back to state-level lat/lon centroid in `dim_geography` |
-| Orders with zero order_items | 775 (603 `unavailable`, 164 `canceled`, rest early-lifecycle) | Out of scope for `fact_delivery` by design — nothing to compute a lead time from |
+| Delivered on the estimated date, after midnight | 1,292 orders | Judged on calendar date → on time |
+| Duplicate reviews | 814 duplicate `review_id`s / 551 orders with >1 review | Latest-answered review per order |
+| Customer/seller zip prefixes with no geolocation sample | 157 / 7 | State-level centroid in `dim_geography` |
+| Orders with zero order_items | 775 (603 `unavailable`, 164 `canceled`, 8 early-lifecycle) | Kept in `fact_order` (`has_items = false`) |
+| Sparse edges of the date range | 2016 has a gap; Sep–Oct 2018 hold 20 orders | Trends use a 2017-01-01 → 2018-08-31 analysis window |
 
 ## Key findings
 
-**Lead-time decomposition** (avg days, delivered orders): Payment **0.40d** → Seller Fulfilment **2.85d** → Transit **9.36d** → Total **~12.6d**. Transit is the dominant stage, and the gap widens sharply for late orders — they spend **3.2x** longer in transit and **2.0x** longer in seller fulfilment than on-time orders. Transportation is the primary lever; seller fulfilment is secondary.
+**Headline** (all 99,441 orders; 96,096 unique customers): GMV R$ 13.49M (excluding cancelled/unavailable), **on-time delivery 93.23%**, 6,534 late orders, cancellation rate 0.63%, average review 4.09 / 5.
 
-**On-time delivery**: 91.89% overall. The worst-performing customer states are in the North/Northeast (AL 23.9% late, MA 19.7% late) versus SP at 5.9% late — largely a distance story, since SP hosts most sellers.
+**Lead-time decomposition** (avg days, 95,097 delivered orders with valid timestamps): Payment **0.40d** → Seller Fulfilment **2.85d** → Transit **9.36d** → Total **12.6d**. Late orders spend **3.5×** longer in transit and **2.1×** longer in seller fulfilment than on-time orders. Transportation is the primary lever; seller fulfilment is secondary.
 
-**Distance genuinely predicts delay** (Pearson r = 0.39 vs. lead time, r = 0.32 vs. freight cost, r = −0.06 vs. review score — distance alone barely moves satisfaction). Late rate climbs monotonically from 6.4% (0–100km) to 11.8% (1000km+).
+**Regional gap**: the worst customer states are in the Northeast — AL 21.4% late, MA 17.4%, SE 15.2% — against SP at 4.5%. The single largest hotspot is 1000+ km deliveries into the Northeast: 8,434 orders at 13.2% late (95% CI 12.5–13.9%).
 
-**Seller Performance Score** (30% OTD + 25% fulfilment speed + 20% cancellation rate + 15% review score + 10% freight efficiency, min-max normalised 0–100): of 1,794 sellers with ≥5 orders — 1,070 Excellent, 661 Good, 48 At Risk, **15 Critical**. Full ranked list: [`data/exports/seller_scorecard.csv`](data/exports/seller_scorecard.csv).
+**Distance predicts delay**: Spearman ρ = 0.54 vs lead time and 0.58 vs freight cost (Pearson r = 0.39 / 0.32 — both are right-skewed, so the rank correlation is the better summary), but only ρ = −0.06 vs review score. The late rate rises steadily from 4.5% (0–100 km) to 10.4% (1000+ km).
 
-**Demand variability**: 61 of 72 categories are "Variable" (CV 0.5–1.0); 188 category-weeks flagged as demand anomalies (|Z| > 2).
+**Seller Performance Score**: 634 sellers have ≥30 orders and are ranked; the other 2,461 are listed with their order counts but not ranked. Rates are shrunk toward the platform average before scoring, components are percentile-ranked, and tiers are relative (top 25% Excellent … bottom 10% Critical: 158 / 317 / 95 / 64). Separately, **81 sellers** have a late rate whose 95% lower bound is above the platform rate of 6.69%. That is evidence of a real problem rather than a ranking position, and it is where to start. Full list: [`reports/seller_scorecard.md`](reports/seller_scorecard.md).
 
-**Supply Chain Risk Index** (40% demand + 35% delivery + 25% revenue-weighted seller risk): 44 categories Low Risk, 24 Medium Risk, 0 High Risk — risk here is *relative* across categories, not absolute, so no single category is simultaneously worst on all three dimensions at once. `furniture_mattress_and_upholstery` tops the list (56.7), driven by a very high delivery-risk component (85.1).
+**Demand variability** (86 full weeks, zero-sales weeks included): of 54 categories with enough volume, 34 are Variable, 17 Highly Variable and 3 Stable by CV. The Syntetos–Boylan inventory classification puts 28 as Smooth, 11 Erratic, 11 Lumpy and 4 Intermittent. Lumpy and intermittent categories need different stocking policies from smooth ones. 192 category-weeks are flagged as anomalies (|Z| > 2).
 
-**Root cause / multi-seller hypothesis — rejected, with a twist.** Orders spanning 2+ sellers are *not* more delay-prone — they're actually late less often (0.7% vs. 8.2% for single-seller orders) and arrive faster, most likely a selection effect since multi-seller orders skew toward higher-volume, more reliable sellers and are rare (<1.5% of orders). But **customer satisfaction runs the opposite direction**: average review score drops sharply as seller count rises (4.17 → 2.89 → 2.24). Multi-seller orders are operationally faster and more reliable by the clock, yet customers rate them worse — Olist's schema has no per-shipment timestamp to confirm it, but split/partial deliveries are the leading theory. Flagged as an open question in [`reports/root_cause_analysis.md`](reports/root_cause_analysis.md) rather than forced to a tidy conclusion.
+**Supply Chain Risk Index** (40% demand + 35% delivery + 25% revenue-weighted seller risk, 52 categories): a relative ranking, top 20% labelled High. The top three are `christmas_supplies` (83.7), `home_confort` (82.3) and `signaling_and_security` (80.8). For some categories, seller risk rests on a small share of scored revenue (shown as `scored_revenue_share`).
+
+**Multi-seller hypothesis: rejected for delays, but reviews are worse.** Orders spanning 2+ sellers are 1.3% of delivered orders (n = 1,275) and are late *less* often: 1.02% vs 6.85% for single-seller orders (two-proportion z-test p ≈ 2e-16). Yet customers rate them much worse: 2.86 vs 4.17 (Mann–Whitney p ≈ 6e-188), falling to 2.24 for 3+ sellers. This is an association, not a cause: these orders differ in basket size, sellers and categories. Split or partial deliveries are a plausible explanation, but Olist has no per-shipment timestamps to test it. See [`reports/root_cause_analysis.md`](reports/root_cause_analysis.md).
 
 ## Order size statistics (items per order)
 
@@ -148,11 +189,11 @@ This dataset's analogue of a "units per carton" metric: an order is the bundling
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | **All orders** | 98,199 | 1.14 | 1.27 | 1 | 1 | 1 | 1.06 | 0.54 | 1 | 21 |
 
-The median order is a single item — most Olist orders are one-item transactions — but the revenue-weighted average (1.27) sitting above the plain mean (1.14) shows higher-value orders skew toward slightly larger baskets. The real signal is in the seller-complexity breakdown: orders touching 2 sellers average 2.36 items, and 3+ sellers average 3.85 — mechanically expected (more sellers implies more items) but it confirms multi-seller orders are a distinct, larger-basket population, not random noise.
+The median order is a single item, but the revenue-weighted average (1.27) sitting above the plain mean (1.14) shows higher-value orders skew toward slightly larger baskets. Orders touching 2 sellers average 2.36 items and 3+ sellers average 3.85. That is mechanically expected, but it confirms multi-seller orders are a distinct, larger-basket population.
 
 ## Dashboard
 
-Five tabs — Executive, Order Fulfilment, Logistics Intelligence, Seller Performance, Demand & Risk — built as a single static HTML file (`dashboard/index.html` + `dashboard/data.js`) so it needs no server.
+Five tabs — Executive, Order Fulfilment, Logistics Intelligence, Seller Performance, Demand & Risk — built as a single static HTML file (`dashboard/index.html` + `dashboard/data.js`) so it needs no server. The screenshots below predate the v2 corrections; the data the dashboard loads is regenerated by every pipeline run.
 
 <p align="center">
   <img src="docs/screenshots/logistics.png" alt="Logistics Intelligence tab" width="100%"><br>
@@ -166,8 +207,9 @@ Five tabs — Executive, Order Fulfilment, Logistics Intelligence, Seller Perfor
 
 ## Known limitations
 
-- Fulfilment time and review score are captured at **order** grain in the source data (Olist doesn't timestamp shipments per seller), so in a multi-seller order every seller inherits the same order-level values — a real constraint on how precisely seller-level fulfilment speed can be attributed.
-- The Supply Chain Risk Index is a relative ranking across categories in *this* dataset, not a calibrated absolute risk probability.
+- Delivery outcome, fulfilment time and review score are recorded once per **order** (Olist doesn't timestamp shipments per seller), so in a multi-seller order (~1.3%) every seller inherits the same values. `missed_shipping_limit` is the one seller-specific signal: it uses each seller's own shipping deadline.
+- The Seller tiers and the Supply Chain Risk Index are relative rankings within this dataset, not calibrated absolute risk probabilities. The `late_rate_flag` is the absolute, evidence-based signal.
+- Demand anomalies are measured against each category's whole-period mean, so fast-growing categories lean toward "Spike" late in the period. Trend-adjusted detection belongs with the forecasting work.
 - Geolocation is aggregated to zip-prefix centroids (Olist ships 5-digit-prefix precision only), so Haversine distances are approximate, not door-to-door.
 
 ## License

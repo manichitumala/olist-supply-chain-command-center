@@ -1,42 +1,73 @@
 # Seller Performance Scorecard
 
-Scored 1,794 sellers with >= 5 orders using: 30% On-Time Delivery, 25% Fulfilment Speed, 20% Cancellation Rate, 15% Review Score, 10% Freight Efficiency (all min-max normalised 0-100 first; 'lower is better' metrics are inverted before weighting).
+3,095 sellers; **634 ranked** (>= 30 distinct orders). The rest are listed in `data/exports/seller_scorecard.csv` as *Insufficient volume* with their order counts.
+
+## Method
+
+- Metrics are computed per seller-order, not per item.
+- Late and cancellation rates are shrunk toward the platform rate with an empirical-Bayes Beta prior (late-rate prior = Beta(8.1, 113.0), i.e. worth ~121 orders). Review averages use a prior worth ~5 reviews.
+- Score = 30% on-time + 25% fulfilment speed + 20% cancellation + 15% review + 10% freight/price, each as a percentile rank (0-100) among ranked sellers.
+- **Tiers are relative**: top 25% Excellent, next 50% Good, next 15% At Risk, bottom 10% Critical.
+- **Absolute flag**: `late_rate_flag` is set when the 95% Wilson lower bound of a seller's late rate exceeds the platform late rate (6.69%). 81 ranked sellers are flagged.
 
 ## Tier distribution
 
-| performance_tier   |   count |
-|:-------------------|--------:|
-| Excellent          |    1070 |
-| Good               |     661 |
-| At Risk            |      48 |
-| Critical           |      15 |
+| performance_tier    |   count |
+|:--------------------|--------:|
+| Excellent           |     158 |
+| Good                |     317 |
+| At Risk             |      95 |
+| Critical            |      64 |
+| Insufficient volume |    2461 |
 
-## Bottom 10 sellers (highest operational risk)
+## Sellers with a statistically significant late-delivery problem
 
-| seller_id                        | state   | region    |   n_orders |   n_items |   total_revenue |   otd_pct |   avg_fulfilment_days |   cancellation_rate_pct |   avg_review_score |   avg_freight_to_price_pct |   seller_score | performance_tier   |   seller_risk_score |
-|:---------------------------------|:--------|:----------|-----------:|----------:|----------------:|----------:|----------------------:|------------------------:|-------------------:|---------------------------:|---------------:|:-------------------|--------------------:|
-| 6219ba2359cfb97f2e38fd4c321eb309 | SP      | Southeast |          6 |         6 |          487.5  |     40    |                 18.71 |                    0    |               3.4  |                      24.95 |           53.7 | Critical           |                46.3 |
-| 538caafddff204241cecbf3a02e6b3cf | SP      | Southeast |          9 |         9 |          148.3  |     50    |                 12.95 |                   11.11 |               2.56 |                      66.33 |           53   | Critical           |                47   |
-| eebb3372362aa9a46975164bed19a7e7 | SP      | Southeast |          7 |         8 |          591.92 |     50    |                  7.91 |                   25    |               2.29 |                      20.17 |           51.7 | Critical           |                48.3 |
-| 633ecdf879b94b5337cca303328e4a25 | SP      | Southeast |          6 |         6 |         1037.6  |     33.33 |                 15    |                    0    |               1.8  |                      10.19 |           48.6 | Critical           |                51.4 |
-| 312ba1d77e9c332ef21f9598b7f64cd7 | SP      | Southeast |          9 |        10 |          756    |     42.86 |                 10.79 |                   30    |               2.7  |                      18.6  |           45.9 | Critical           |                54.1 |
-| b1b3948701c5c72445495bd161b83a4c | SP      | Southeast |         18 |        18 |        24699.2  |     35.71 |                 14.1  |                   11.11 |               1.72 |                       2.73 |           45.3 | Critical           |                54.7 |
-| 6cf476a4ca74498db55cbccdaa9dcfb6 | SP      | Southeast |          6 |         7 |          939.93 |     50    |                 22.4  |                   14.29 |               2.71 |                      44.82 |           44.3 | Critical           |                55.7 |
-| 44f091b5abab8018f682fce8124b85e5 | SP      | Southeast |          6 |         6 |         1680.1  |     33.33 |                 10.89 |                   33.33 |               2.5  |                      10.64 |           40.2 | Critical           |                59.8 |
-| 6ee85be3693ed79a8e80718743d80655 | SP      | Southeast |          9 |        13 |          484.5  |     60    |                 16.92 |                   38.46 |               1.92 |                      38.41 |           39.2 | Critical           |                60.8 |
-| 8c3b533c63cca56240f94f1e3a6b18ef | MG      | Southeast |          5 |         8 |         3312.16 |     20    |                 27.89 |                    0    |               1.33 |                      29.45 |           29.4 | Critical           |                70.6 |
+| seller_id                        | state   |   n_orders |   late_rate_raw |   late_rate_ci_low |   late_rate_ci_high |   late_rate_adj |   avg_fulfilment_days |   avg_review_adj |   seller_score | performance_tier   |
+|:---------------------------------|:--------|-----------:|----------------:|-------------------:|--------------------:|----------------:|----------------------:|-----------------:|---------------:|:-------------------|
+| 54965bbe3e4f07ae045b90b0b8541f52 | PR      |         78 |          0.3014 |             0.2082 |              0.4144 |          0.1552 |               16.0459 |           3.0652 |           19.5 | Critical           |
+| ede0c03645598cdfc63ca8237acbe73d | SP      |         46 |          0.3256 |             0.2049 |              0.4748 |          0.1349 |                3.435  |           3.5774 |           10.8 | Critical           |
+| ad781527c93d00d89a11eecd9dcad7c1 | SP      |         44 |          0.3158 |             0.1908 |              0.4746 |          0.1265 |               10.894  |           3.1669 |            3.7 | Critical           |
+| 2a1348e9addc1af5aaa619b1a3679d6b | MG      |         52 |          0.2708 |             0.1657 |              0.41   |          0.125  |                4.7087 |           3.1998 |            8.4 | Critical           |
+| 06a2c3af7b3aee5d69171b0e14f0ee87 | MA      |        392 |          0.1902 |             0.1543 |              0.2322 |          0.161  |                4.7089 |           3.9909 |           28.9 | At Risk            |
+| 835f0f7810c76831d6c7d24c7a646d4d | SP      |         44 |          0.2619 |             0.153  |              0.4107 |          0.1173 |                9.3839 |           3.4132 |            8.6 | Critical           |
+| a49928bcdf77c55c6d6e05e09a9b4ca5 | SP      |         98 |          0.2188 |             0.1478 |              0.3114 |          0.1342 |                6.9696 |           3.0597 |           22.5 | Critical           |
+| beadbee30901a7f61d031b6b686095ad | SP      |         64 |          0.2344 |             0.1475 |              0.3513 |          0.125  |                7.1308 |           3.9187 |           21.9 | Critical           |
+| 712e6ed8aa4aa1fa65dab41fed5737e4 | SC      |         79 |          0.2078 |             0.1321 |              0.3112 |          0.1218 |                7.2176 |           3.4247 |           22.4 | Critical           |
+| 88460e8ebdecbfecb5f9601833981930 | PR      |        248 |          0.1707 |             0.1289 |              0.2227 |          0.1366 |                7.5486 |           3.4256 |           12.1 | Critical           |
+| e5a3438891c0bfdb9394643f95273d8e | SP      |        224 |          0.1574 |             0.1149 |              0.2119 |          0.125  |                3.3579 |           3.9224 |           14.4 | Critical           |
+| ef990a83bbea832f36ebe81376335aa8 | SC      |         43 |          0.2093 |             0.1142 |              0.3521 |          0.1044 |                1.7727 |           3.6733 |           32.5 | At Risk            |
+| 1ca7077d890b907f89be8c954a02686a | SP      |        115 |          0.1667 |             0.1081 |              0.2481 |          0.1141 |                5.4356 |           2.403  |           27.1 | At Risk            |
+| 8160255418d5aaa7dbdc9f4c64ebda44 | SP      |        385 |          0.1368 |             0.1059 |              0.1751 |          0.12   |                3.6734 |           3.9363 |           35.1 | At Risk            |
+| cac4c8e7b1ca6252d8f20b2fc1a2e4af | SP      |         75 |          0.1757 |             0.1056 |              0.2777 |          0.1083 |                5.7504 |           3.5606 |           18.2 | Critical           |
 
-## Top 10 sellers
+## Bottom 10 ranked sellers
 
-| seller_id                        | state   | region       |   n_orders |   n_items |   total_revenue |   otd_pct |   avg_fulfilment_days |   cancellation_rate_pct |   avg_review_score |   avg_freight_to_price_pct |   seller_score | performance_tier   |   seller_risk_score |
-|:---------------------------------|:--------|:-------------|-----------:|----------:|----------------:|----------:|----------------------:|------------------------:|-------------------:|---------------------------:|---------------:|:-------------------|--------------------:|
-| 0ad80de75c811326389cfb1daba7d45e | RJ      | Southeast    |          6 |         6 |         1449.4  |       100 |                  0.9  |                       0 |               5    |                       8.37 |           99.4 | Excellent          |                 0.6 |
-| 01ed254b9ff8407dfb9d99ba1e17d923 | SP      | Southeast    |          5 |         5 |         1465.99 |       100 |                  1.02 |                       0 |               5    |                       6.16 |           99.3 | Excellent          |                 0.7 |
-| 2addf05f476d0637864454e93ba673d5 | DF      | Central-West |         12 |        12 |         4552    |       100 |                  1.1  |                       0 |               5    |                       8.76 |           99.2 | Excellent          |                 0.8 |
-| 74871d19219c7d518d0090283e03c137 | SP      | Southeast    |          6 |         7 |          550.04 |       100 |                  0.65 |                       0 |               5    |                      22.33 |           99.1 | Excellent          |                 0.9 |
-| 297d5eccd19fa9a83b2630071ff105e4 | PR      | South        |          8 |         8 |          834.97 |       100 |                  0.9  |                       0 |               5    |                      16.93 |           99.1 | Excellent          |                 0.9 |
-| c8c1bea22194a4eefa2dc9a9fa89f536 | SC      | South        |          7 |        13 |         1266    |       100 |                  0.59 |                       0 |               5    |                      29    |           99   | Excellent          |                 1   |
-| 5c030029b5916fed0986310385ec9009 | SC      | South        |          7 |        10 |         4164.4  |       100 |                  0.82 |                       0 |               4.9  |                      18.52 |           98.7 | Excellent          |                 1.3 |
-| 5d76d80a2f5f39c891b996a1bf4c9853 | SP      | Southeast    |          6 |         6 |         1238.5  |       100 |                  0.76 |                       0 |               4.83 |                      13.3  |           98.6 | Excellent          |                 1.4 |
-| bb2afe2061d53c6968aa0cffa233a8ec | SP      | Southeast    |          5 |         6 |          549.4  |       100 |                  0.67 |                       0 |               4.83 |                      18.58 |           98.6 | Excellent          |                 1.4 |
-| adbe70ab2c97442046d393988c8d1d27 | SP      | Southeast    |          5 |         5 |          289.5  |       100 |                  1.34 |                       0 |               5    |                      22.83 |           98.5 | Excellent          |                 1.5 |
+| seller_id                        | state   |   n_orders |   late_rate_raw |   late_rate_ci_low |   late_rate_ci_high |   late_rate_adj |   avg_fulfilment_days |   avg_review_adj |   seller_score | performance_tier   |
+|:---------------------------------|:--------|-----------:|----------------:|-------------------:|--------------------:|----------------:|----------------------:|-----------------:|---------------:|:-------------------|
+| 6973a06f484aacf400ece213dbf3d946 | SP      |         95 |          0.1461 |             0.0874 |              0.234  |          0.1006 |                5.7388 |           3.5889 |           12.2 | Critical           |
+| 850913d59ce317156b00f3705f1c3edb | SP      |         32 |          0.1724 |             0.076  |              0.3455 |          0.0875 |                4.9585 |           3.521  |           12.2 | Critical           |
+| 88460e8ebdecbfecb5f9601833981930 | PR      |        248 |          0.1707 |             0.1289 |              0.2227 |          0.1366 |                7.5486 |           3.4256 |           12.1 | Critical           |
+| b17b679f4f5ce2e03ce6968c62648246 | SP      |         55 |          0.16   |             0.0834 |              0.2851 |          0.0943 |                3.9485 |           3.739  |           11.4 | Critical           |
+| d20b021d3efdf267a402c402a48ea64b | SP      |         90 |          0.1628 |             0.0995 |              0.2549 |          0.1069 |                3.6608 |           3.7056 |           10.8 | Critical           |
+| ede0c03645598cdfc63ca8237acbe73d | SP      |         46 |          0.3256 |             0.2049 |              0.4748 |          0.1349 |                3.435  |           3.5774 |           10.8 | Critical           |
+| 855668e0971d4dfd7bef1b6a4133b41b | SP      |        312 |          0.1267 |             0.0937 |              0.1691 |          0.1096 |                5.8673 |           3.7768 |           10.7 | Critical           |
+| 835f0f7810c76831d6c7d24c7a646d4d | SP      |         44 |          0.2619 |             0.153  |              0.4107 |          0.1173 |                9.3839 |           3.4132 |            8.6 | Critical           |
+| 2a1348e9addc1af5aaa619b1a3679d6b | MG      |         52 |          0.2708 |             0.1657 |              0.41   |          0.125  |                4.7087 |           3.1998 |            8.4 | Critical           |
+| ad781527c93d00d89a11eecd9dcad7c1 | SP      |         44 |          0.3158 |             0.1908 |              0.4746 |          0.1265 |               10.894  |           3.1669 |            3.7 | Critical           |
+
+## Top 10 ranked sellers
+
+| seller_id                        | state   |   n_orders |   late_rate_raw |   late_rate_ci_low |   late_rate_ci_high |   late_rate_adj |   avg_fulfilment_days |   avg_review_adj |   seller_score | performance_tier   |
+|:---------------------------------|:--------|-----------:|----------------:|-------------------:|--------------------:|----------------:|----------------------:|-----------------:|---------------:|:-------------------|
+| c3cfdc648177fdbbbb35635a37472c53 | PR      |        278 |          0.0144 |             0.0056 |              0.0364 |          0.0304 |                1.5643 |           4.4629 |           89.9 | Excellent          |
+| 725c32fa80c2faacc4fc88450d27314e | SP      |         89 |          0.0112 |             0.002  |              0.0609 |          0.0435 |                0.8343 |           4.4951 |           88.9 | Excellent          |
+| 289cdb325fb7e7f891c38608bf9e0962 | SP      |        110 |          0.0183 |             0.005  |              0.0644 |          0.0441 |                1.2725 |           4.5528 |           88.7 | Excellent          |
+| 8ae520247981aa06bc94abddf5f46d34 | SC      |         65 |          0      |             0      |              0.0558 |          0.0437 |                1.064  |           4.4219 |           87.6 | Excellent          |
+| 9f505651f4a6abe901a56cdc21508025 | SP      |        397 |          0.0407 |             0.0252 |              0.0651 |          0.047  |                0.9767 |           4.3371 |           87.5 | Excellent          |
+| d921b68bf747894be13a97ae52b0f386 | MG      |         77 |          0.013  |             0.0023 |              0.07   |          0.0461 |                1.2445 |           4.5312 |           87.2 | Excellent          |
+| d566c37fa119d5e66c4e9052e83ee4ea | SP      |         65 |          0      |             0      |              0.0558 |          0.0437 |                1.0349 |           4.6463 |           86   | Excellent          |
+| ac3508719a1d8f5b7614b798f70af136 | RS      |        103 |          0.0198 |             0.0054 |              0.0693 |          0.0457 |                1.2265 |           4.5809 |           85.7 | Excellent          |
+| 744dac408745240a2c2528fb1b6028f3 | PR      |         79 |          0.0128 |             0.0023 |              0.0691 |          0.0459 |                1.5878 |           4.5424 |           84.6 | Excellent          |
+| de722cd6dad950a92b7d4f82673f8833 | PE      |        339 |          0.0356 |             0.0205 |              0.0612 |          0.044  |                1.5982 |           4.2909 |           83.8 | Excellent          |
+
+Caveat: delivery outcome, fulfilment time and review are recorded per order, so in multi-seller orders (~1.3%) every seller inherits the order's values.

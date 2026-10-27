@@ -1,44 +1,41 @@
--- DASHBOARD 3 — LOGISTICS INTELLIGENCE
--- Distance bands, freight cost, and state-level hotspots.
+-- DASHBOARD 3 - LOGISTICS INTELLIGENCE
+-- Population: delivered orders. Late = delivered after the promised DATE.
 
--- OTD and lead time by distance band (does distance explain delays?)
+-- Late rate and lead time by distance band.
 SELECT
     distance_band,
     COUNT(*) AS n_orders,
-    ROUND(AVG(avg_distance_km)::numeric, 0) AS avg_distance_km,
-    ROUND(AVG(lead_time_days)::numeric, 2) AS avg_lead_time_days,
-    ROUND(AVG(total_freight_value)::numeric, 2) AS avg_freight_value,
-    ROUND(100.0 * SUM(CASE WHEN otd_status = 'Late' THEN 1 ELSE 0 END)
-        / NULLIF(SUM(CASE WHEN otd_status IN ('On Time','Late') THEN 1 ELSE 0 END), 0), 2)
-        AS late_pct
-FROM gold.fact_delivery
-WHERE order_status = 'delivered'
+    ROUND(AVG(avg_distance_km), 0) AS avg_distance_km,
+    ROUND(AVG(lead_time_days), 2) AS avg_lead_time_days,
+    ROUND(AVG(freight_value), 2) AS avg_freight_value,
+    SUM((otd_status = 'Late')::INT) AS n_late,
+    ROUND(100.0 * AVG((otd_status = 'Late')::INT), 2) AS late_pct
+FROM gold.fact_order
+WHERE is_delivered
 GROUP BY distance_band
 ORDER BY avg_distance_km NULLS LAST;
 
--- State-level performance: worst customer experience by state
+-- Customer-state performance (states with >= 30 delivered orders).
 SELECT
-    dc.state,
+    customer_state AS state,
     COUNT(*) AS n_orders,
-    ROUND(AVG(fd.lead_time_days)::numeric, 2) AS avg_lead_time_days,
-    ROUND(100.0 * SUM(CASE WHEN fd.otd_status = 'Late' THEN 1 ELSE 0 END)
-        / NULLIF(SUM(CASE WHEN fd.otd_status IN ('On Time','Late') THEN 1 ELSE 0 END), 0), 2)
-        AS late_pct,
-    ROUND(AVG(fd.review_score)::numeric, 2) AS avg_review_score
-FROM gold.fact_delivery fd
-JOIN gold.dim_customer dc ON dc.customer_key = fd.customer_key
-WHERE fd.order_status = 'delivered'
-GROUP BY dc.state
+    ROUND(AVG(lead_time_days), 2) AS avg_lead_time_days,
+    SUM((otd_status = 'Late')::INT) AS n_late,
+    ROUND(100.0 * AVG((otd_status = 'Late')::INT), 2) AS late_pct,
+    ROUND(AVG(review_score), 2) AS avg_review_score
+FROM gold.fact_order
+WHERE is_delivered
+GROUP BY customer_state
 HAVING COUNT(*) >= 30
 ORDER BY late_pct DESC;
 
--- Scatter-plot source data: distance vs delivery time vs freight vs OTD
--- (X = distance, Y = lead time, size = freight, colour = otd_status)
+-- Scatter source: distance vs lead time vs freight vs on-time status.
 SELECT
-    fd.order_id,
-    fd.avg_distance_km AS distance_km,
-    fd.lead_time_days,
-    fd.total_freight_value AS freight_value,
-    fd.otd_status
-FROM gold.fact_delivery fd
-WHERE fd.order_status = 'delivered' AND fd.avg_distance_km IS NOT NULL;
+    order_id,
+    avg_distance_km AS distance_km,
+    lead_time_days,
+    freight_value,
+    review_score,
+    otd_status
+FROM gold.fact_order
+WHERE is_delivered AND avg_distance_km IS NOT NULL AND lead_time_days IS NOT NULL;

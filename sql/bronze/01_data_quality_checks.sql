@@ -1,6 +1,6 @@
 -- BRONZE LAYER DATA QUALITY CHECKS
 -- Every query here is designed to be run standalone and read top-to-bottom
--- as a data quality audit. python/data_quality.py runs these and compiles
+-- as a data quality audit. src/quality/data_quality.py runs these and compiles
 -- the results into reports/data_quality_report.md.
 
 -- ============================================================
@@ -52,6 +52,33 @@ FROM bronze.sellers s
 LEFT JOIN bronze.geolocation g
        ON s.seller_zip_code_prefix = g.geolocation_zip_code_prefix
 WHERE g.geolocation_zip_code_prefix IS NULL;
+
+-- 1g. Products whose category has no English translation
+-- (v1 silently relabelled these 'unknown'; silver now keeps the Portuguese name)
+SELECT p.product_category_name, COUNT(*) AS n_products
+FROM bronze.products p
+LEFT JOIN bronze.product_category_translation t
+       ON p.product_category_name = t.product_category_name
+WHERE p.product_category_name IS NOT NULL AND t.product_category_name IS NULL
+GROUP BY p.product_category_name
+ORDER BY n_products DESC;
+
+-- 1h. Orders with no order_items at all, by status
+-- (kept in gold.fact_order so cancellation rates use the full denominator)
+SELECT o.order_status, COUNT(*) AS n_orders_without_items
+FROM bronze.orders o
+LEFT JOIN bronze.order_items oi ON oi.order_id = o.order_id
+WHERE oi.order_id IS NULL
+GROUP BY o.order_status
+ORDER BY n_orders_without_items DESC;
+
+-- 1i. Orders by purchase month (shows the sparse 2016 / late-2018 edges
+-- that motivate the analysis window in src/config.py)
+SELECT strftime(order_purchase_timestamp::TIMESTAMP, '%Y-%m') AS purchase_month,
+       COUNT(*) AS n_orders
+FROM bronze.orders
+GROUP BY purchase_month
+ORDER BY purchase_month;
 
 -- ============================================================
 -- 2. REFERENTIAL INTEGRITY
@@ -121,33 +148,41 @@ SELECT 'order_reviews (order_id, duplicated reviews per order)',
 SELECT COUNT(*) AS approved_before_purchase
 FROM bronze.orders
 WHERE order_approved_at IS NOT NULL
-  AND order_approved_at::timestamp < order_purchase_timestamp::timestamp;
+  AND order_approved_at::TIMESTAMP < order_purchase_timestamp::TIMESTAMP;
 
 -- 4b. Carrier handover before payment was approved
 SELECT COUNT(*) AS carrier_before_approved
 FROM bronze.orders
 WHERE order_delivered_carrier_date IS NOT NULL
   AND order_approved_at IS NOT NULL
-  AND order_delivered_carrier_date::timestamp < order_approved_at::timestamp;
+  AND order_delivered_carrier_date::TIMESTAMP < order_approved_at::TIMESTAMP;
 
 -- 4c. Customer delivery before carrier handover
 SELECT COUNT(*) AS delivered_before_carrier_handover
 FROM bronze.orders
 WHERE order_delivered_customer_date IS NOT NULL
   AND order_delivered_carrier_date IS NOT NULL
-  AND order_delivered_customer_date::timestamp < order_delivered_carrier_date::timestamp;
+  AND order_delivered_customer_date::TIMESTAMP < order_delivered_carrier_date::TIMESTAMP;
 
 -- 4d. Customer delivery before purchase (the most basic impossible sequence)
 SELECT COUNT(*) AS delivered_before_purchase
 FROM bronze.orders
 WHERE order_delivered_customer_date IS NOT NULL
-  AND order_delivered_customer_date::timestamp < order_purchase_timestamp::timestamp;
+  AND order_delivered_customer_date::TIMESTAMP < order_purchase_timestamp::TIMESTAMP;
 
 -- 4e. Estimated delivery date earlier than purchase date (suspicious metadata)
 SELECT COUNT(*) AS estimated_before_purchase
 FROM bronze.orders
 WHERE order_estimated_delivery_date IS NOT NULL
-  AND order_estimated_delivery_date::timestamp < order_purchase_timestamp::timestamp;
+  AND order_estimated_delivery_date::TIMESTAMP < order_purchase_timestamp::TIMESTAMP;
+
+-- 4f. Delivered on the estimated date itself, after midnight.
+-- estimated_delivery_date is always 00:00:00, so a timestamp comparison
+-- wrongly classifies these orders as late. Gold compares DATES instead.
+SELECT COUNT(*) AS delivered_on_estimated_date
+FROM bronze.orders
+WHERE order_delivered_customer_date IS NOT NULL
+  AND order_delivered_customer_date::TIMESTAMP::DATE = order_estimated_delivery_date::TIMESTAMP::DATE;
 
 -- ============================================================
 -- 5. VALUE RANGE / SANITY CHECKS
@@ -155,16 +190,16 @@ WHERE order_estimated_delivery_date IS NOT NULL
 
 -- 5a. Non-positive price or freight value
 SELECT
-    SUM(CASE WHEN price::numeric <= 0 THEN 1 ELSE 0 END) AS non_positive_price,
-    SUM(CASE WHEN freight_value::numeric < 0 THEN 1 ELSE 0 END) AS negative_freight
+    SUM(CASE WHEN TRY_CAST(price AS DOUBLE) <= 0 THEN 1 ELSE 0 END) AS non_positive_price,
+    SUM(CASE WHEN TRY_CAST(freight_value AS DOUBLE) < 0 THEN 1 ELSE 0 END) AS negative_freight
 FROM bronze.order_items;
 
 -- 5b. Review scores outside the valid 1-5 range
 SELECT COUNT(*) AS invalid_review_scores
 FROM bronze.order_reviews
-WHERE review_score::int NOT BETWEEN 1 AND 5;
+WHERE TRY_CAST(review_score AS INTEGER) NOT BETWEEN 1 AND 5;
 
 -- 5c. Negative payment values
 SELECT COUNT(*) AS negative_payments
 FROM bronze.order_payments
-WHERE payment_value::numeric < 0;
+WHERE TRY_CAST(payment_value AS DOUBLE) < 0;
