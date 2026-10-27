@@ -6,3 +6,5 @@ scipy>=1.11
 matplotlib>=3.8
 tabulate>=0.9
 pytest>=8.0
+streamlit>=1.50
+plotly>=6.0
